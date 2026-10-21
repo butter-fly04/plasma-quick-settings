@@ -55,12 +55,13 @@ Item {
     // ------------------------------------------------------------ main page
     ColumnLayout {
         id: mainColumn
-        visible: full.page === "main"
         anchors {
             fill: parent
             margins: full.margin
         }
         spacing: Kirigami.Units.largeSpacing
+        enabled: opacity > 0.5
+        scale: 1
 
         // Top row: battery pill + system buttons
         RowLayout {
@@ -198,11 +199,27 @@ Item {
 
         // Media player card (M5).  Hidden entirely when no MPRIS2 player
         // is around, so the popup looks the same as before on systems
-        // without audio playback.
-        MediaCard {
+        // without audio playback.  The wrapper animates its height so the
+        // card slides in/out instead of popping (and moving everything
+        // below it abruptly).
+        Item {
+            id: mediaWrap
             visible: Plasmoid.configuration.showMediaCard
+            clip: true
             Layout.fillWidth: true
-            backend: full.backend
+            implicitHeight: backend.mediaAvailable ? backendCard.implicitHeight : 0
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            MediaCard {
+                id: backendCard
+                anchors.fill: parent
+                backend: full.backend
+            }
         }
 
         // Sliders.  The volume and microphone rows carry a device-picker
@@ -525,13 +542,19 @@ Item {
     }
 
     // ---------------------------------------------------------- detail page
+    // Both pages stay mounted and cross-fade (with a slight scale settle)
+    // when switching; `enabled` hands interaction to the opaque page.
     ColumnLayout {
-        visible: full.page !== "main"
+        id: detailColumn
         anchors {
             fill: parent
             margins: full.margin
         }
         spacing: Kirigami.Units.largeSpacing
+        opacity: 0
+        scale: 0.96
+        enabled: !mainColumn.enabled
+        transformOrigin: Item.Top
 
         RowLayout {
             Layout.fillWidth: true
@@ -627,6 +650,48 @@ Item {
                 : comingSoonPage
         }
     }
+
+    // Page transitions: main <-> detail cross-fade with a subtle scale
+    // settle (same durations/curves the rest of plasma uses).
+    states: [
+        State {
+            name: "mainPage"
+            when: full.page === "main"
+            PropertyChanges {
+                target: mainColumn
+                opacity: 1
+                scale: 1
+            }
+            PropertyChanges {
+                target: detailColumn
+                opacity: 0
+                scale: 0.96
+            }
+        },
+        State {
+            name: "detailPage"
+            when: full.page !== "main"
+            PropertyChanges {
+                target: detailColumn
+                opacity: 1
+                scale: 1
+            }
+            PropertyChanges {
+                target: mainColumn
+                opacity: 0
+                scale: 0.96
+            }
+        }
+    ]
+    transitions: [
+        Transition {
+            NumberAnimation {
+                properties: "opacity,scale"
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+    ]
 
     // Tell the backend which page is open (it refreshes that page's list)...
     onPageChanged: backend.activePage = page

@@ -111,20 +111,34 @@ ColumnLayout {
         }
     }
 
-    // Inline device list, expands under the slider row.
+    // Inline device list, expands under the slider row with a drop
+    // animation (height + fade; the clip Item keeps the content inside
+    // its shrinking bounds while the column sorts itself out).
     Item {
         id: devicesClip
-        visible: row.expanded && row.picker
+        visible: row.picker
+        clip: true
         Layout.fillWidth: true
-        Layout.preferredHeight: visible ? devicesColumn.implicitHeight : 0
+        implicitHeight: row.expanded ? devicesColumn.implicitHeight : 0
+        Behavior on implicitHeight {
+            NumberAnimation {
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.OutCubic
+            }
+        }
 
         ColumnLayout {
             id: devicesColumn
-            clip: true
-            visible: row.expanded
             anchors.left: parent.left
             anchors.right: parent.right
             spacing: 0
+            opacity: row.expanded ? 1 : 0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             PlasmaComponents3.Label {
                 visible: row.devices.length === 0
