@@ -69,19 +69,19 @@
         </entry>
         <entry name="showNightLightTile" type="Bool">
             <label>Show the Night Light tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
         <entry name="showDarkStyleTile" type="Bool">
             <label>Show the Dark Style tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
         <entry name="showDoNotDisturbTile" type="Bool">
             <label>Show the Do Not Disturb tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
         <entry name="showAirplaneModeTile" type="Bool">
             <label>Show the Airplane Mode tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
         <entry name="showClipboardTile" type="Bool">
             <label>Show the Clipboard tile.</label>
@@ -93,11 +93,11 @@
         </entry>
         <entry name="showDevicesTile" type="Bool">
             <label>Show the Disks &amp; Devices tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
         <entry name="showInputMethodTile" type="Bool">
             <label>Show the Input Method tile.</label>
-            <default>true</default>
+            <default>false</default>
         </entry>
 
         <!-- Popup buttons visibility (the top-right action buttons) -->
@@ -123,7 +123,7 @@
         </entry>
         <entry name="mediaPosition" type="String">
             <label>Where the media player card sits: top (above the header row), default (below the header), or belowpills (below the tray pill rows and above the footer rows).</label>
-            <default>default</default>
+            <default>belowpills</default>
         </entry>
         <entry name="showTrayFooter" type="Bool">
             <label>Show the Tray &amp; Background Apps footer row.</label>
@@ -141,7 +141,7 @@
         </entry>
         <entry name="showSniPills" type="Bool">
             <label>Show every system tray app as a pill in the main page (instead of only the pinned ones).  The pill's arrow opens its context menu.</label>
-            <default>false</default>
+            <default>true</default>
         </entry>
 
         <!-- Screenshot backend preference -->
