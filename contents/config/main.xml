@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+                          http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+    <kcfgfile name=""/>
+
+    <!-- All config keys live in the "General" group.  Plasma's config
+         framework auto-binds `cfg_<keyName>` properties in the tab QML
+         files to keys in the "General" group (the default group for
+         plasmoid config).  Keys in other named groups do NOT get the
+         auto-binding, which is why v0.7.3/v0.7.4's tab pages were
+         empty — the keys were in groups named "PanelIcons", "Sliders",
+         "Tiles", "Buttons", etc. and the cfg_ properties never
+         received values from Plasmoid.configuration. -->
+    <group name="General">
+        <!-- Panel icon visibility (CompactRepresentation) -->
+        <entry name="showCameraIndicator" type="Bool">
+            <label>Show the camera-in-use indicator in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showMicIndicator" type="Bool">
+            <label>Show the microphone-in-use indicator in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showNetworkIcon" type="Bool">
+            <label>Show the network (Wi-Fi/ethernet) icon in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showVolumeIcon" type="Bool">
+            <label>Show the volume icon in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showBatteryIcon" type="Bool">
+            <label>Show the battery icon (and percentage) in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showBatteryPercent" type="Bool">
+            <label>Show the battery percentage next to the battery icon in horizontal panels.</label>
+            <default>true</default>
+        </entry>
+
+        <!-- Popup sliders visibility (FullRepresentation) -->
+        <entry name="showVolumeSlider" type="Bool">
+            <label>Show the output-volume slider.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showMicSlider" type="Bool">
+            <label>Show the input-volume (microphone) slider.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showBrightnessSlider" type="Bool">
+            <label>Show the screen-brightness slider.</label>
+            <default>true</default>
+        </entry>
+
+        <!-- Popup tiles visibility (FullRepresentation's main grid) -->
+        <entry name="showWifiTile" type="Bool">
+            <label>Show the Wi-Fi tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showBluetoothTile" type="Bool">
+            <label>Show the Bluetooth tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showPowerModeTile" type="Bool">
+            <label>Show the Power Mode tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showNightLightTile" type="Bool">
+            <label>Show the Night Light tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showDarkStyleTile" type="Bool">
+            <label>Show the Dark Style tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showDoNotDisturbTile" type="Bool">
+            <label>Show the Do Not Disturb tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showAirplaneModeTile" type="Bool">
+            <label>Show the Airplane Mode tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showClipboardTile" type="Bool">
+            <label>Show the Clipboard tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showKdeConnectTile" type="Bool">
+            <label>Show the KDE Connect tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showDevicesTile" type="Bool">
+            <label>Show the Disks &amp; Devices tile.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showInputMethodTile" type="Bool">
+            <label>Show the Input Method tile.</label>
+            <default>true</default>
+        </entry>
+
+        <!-- Popup buttons visibility (the top-right action buttons) -->
+        <entry name="showScreenshotButton" type="Bool">
+            <label>Show the screenshot button.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showSettingsButton" type="Bool">
+            <label>Show the System Settings button.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showLockButton" type="Bool">
+            <label>Show the Lock Screen button.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showPowerButton" type="Bool">
+            <label>Show the Shut Down / Restart / Log Out button.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showMediaCard" type="Bool">
+            <label>Show the media player card when a player is running.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showTrayFooter" type="Bool">
+            <label>Show the Tray &amp; Background Apps footer row.</label>
+            <default>true</default>
+        </entry>
+
+        <!-- SNI pills — third-party tray icons promoted to the main grid -->
+        <entry name="pinnedSnis" type="StringList">
+            <label>List of StatusNotifierItem "service|path" pairs to show as pills in the main grid.  Pipe character separates the service from the D-Bus object path.</label>
+            <default></default>
+        </entry>
+
+        <!-- Screenshot backend preference -->
+        <entry name="screenshotBackend" type="String">
+            <label>Screenshot tool to use.  One of: auto, spectacle, grim, flameshot, gnome-screenshot, maim.</label>
+            <default>auto</default>
+        </entry>
+        <entry name="screenshotDefaultMode" type="String">
+            <label>Default screenshot mode when the screenshot button is clicked.  One of: fullscreen, region, window.</label>
+            <default>fullscreen</default>
+        </entry>
+    </group>
+</kcfg>
