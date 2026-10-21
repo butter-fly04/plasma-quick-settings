@@ -66,17 +66,47 @@ ColumnLayout {
             Layout.minimumWidth: Kirigami.Units.gridUnit * 2
         }
 
-        // GNOME-style chevron at the right edge.  Only on picker rows —
-        // the brightness slider has no devices.
-        PlasmaComponents3.ToolButton {
+        // Device-picker arrow at the right edge, using the same go-next
+        // glyph the tiles' right edges use (the dedicated expand/collapse
+        // theme icons render broken here).  It points right when closed,
+        // like the pills above, and rotates 90° to point down when open.
+        // Only on picker rows — the brightness slider has no devices.
+        Item {
+            id: pickerArrow
             visible: row.picker
-            flat: true
-            icon.name: row.expanded ? "edit-collapse" : "edit-expand"
+            enabled: row.picker
             opacity: row.dimmed ? 0.6 : 1
-            onClicked: {
-                row.expanded = !row.expanded
-                if (row.expanded)
-                    row.devicesRequested()
+            Layout.preferredWidth: arrowIcon.width
+            Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
+            Layout.maximumWidth: Kirigami.Units.iconSizes.smallMedium
+
+            rotation: row.expanded ? 90 : 0
+            Behavior on rotation {
+                RotationAnimation {
+                    duration: Kirigami.Units.shortDuration
+                }
+            }
+
+            Kirigami.Icon {
+                id: arrowIcon
+                isMask: true
+                color: Kirigami.Theme.textColor
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenter: parent.horizontalCenter
+                source: "go-next"
+                fallback: "go-next"
+                width: Kirigami.Units.iconSizes.small
+                height: Kirigami.Units.iconSizes.small
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    row.expanded = !row.expanded
+                    if (row.expanded)
+                        row.devicesRequested()
+                }
             }
         }
     }
