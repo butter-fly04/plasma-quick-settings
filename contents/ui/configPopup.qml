@@ -145,6 +145,11 @@ KCM.SimpleKCM {
             onToggled: cfg_showMediaCard = checked
         }
         QQC2.CheckBox {
+            text: i18n("Show media player at the top (above the header row)")
+            checked: cfg_mediaOnTop
+            onToggled: cfg_mediaOnTop = checked
+        }
+        QQC2.CheckBox {
             text: i18n("Tray & Background Apps footer")
             checked: cfg_showTrayFooter
             onToggled: cfg_showTrayFooter = checked
@@ -157,22 +162,22 @@ KCM.SimpleKCM {
             onToggled: cfg_showSniPills = checked
         }
 
-        QQC2.CheckBox {
-            Kirigami.FormData.label: i18n("Notifications page")
-            text: i18n("Show the Do Not Disturb switch")
-            checked: cfg_showDndInNotifications
-            onToggled: cfg_showDndInNotifications = checked
-        }
-
-        // SNI pill hint — actual editing happens via the Tray page's right-click
-        // action ("Pin to Quick Settings"), but we mention it here so the user
-        // knows where to look.
+        // SNI pill hint — keep it right under the tray-pills toggle it
+        // explains; with another group following close by it would read as
+        // that toggle's hint.
         PlasmaComponents3.Label {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             opacity: 0.8
-            text: i18n("With this off, only icons pinned from the Tray page (right-click an item there and choose \"Pin to Quick Settings\") show as pills in the main grid.")
+            text: i18n("Off: only icons pinned from the Tray page (right-click an item there and choose \"Pin to Quick Settings\") show as pills. On: every running background app shows as a pill below the tiles.")
+        }
+
+        QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("Notifications page")
+            text: i18n("Show the Do Not Disturb switch")
+            checked: cfg_showDndInNotifications
+            onToggled: cfg_showDndInNotifications = checked
         }
     }
 }

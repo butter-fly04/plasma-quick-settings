@@ -23,13 +23,27 @@ import org.kde.kirigami as Kirigami
 Item {
     id: tile
 
-    // A single SNI object from Backend.pinnedSniItems — has fields:
+    // A single SNI object, injected by the Repeater as in the stock Tray
+    // page: the delegate declares `required property var modelData` itself
+    // (same pattern as TrayPage.qml's rows — TrayPage.qml's header comment
+    // explains why).  Binding it from outside as `sni: modelData` left the
+    // property undefined in the deployed applet: pills rendered empty (no
+    // icon, no title) and their menu arrows did nothing.
+    required property int index
+    required property var modelData
+
+    // Fields of the SNI object from Backend.pillSniItems:
     //   title, icon, tooltip, isMenu, service, path
-    required property var sni
+    readonly property var sni: modelData
     required property var backend
 
     signal activated()
     signal menuRequested()
+
+    // The pill shows one line: titles can be multiline ("IBus Panel\n…"),
+    // the pill only has room for the first line.
+    readonly property string pillTitle: (sni.title || sni.service || "").split("\n")[0]
+    readonly property string pillTooltip: sni.tooltip || ""
 
     implicitHeight: Kirigami.Units.gridUnit * 3
     implicitWidth: Kirigami.Units.gridUnit * 10
@@ -86,15 +100,15 @@ Item {
                 spacing: 0
                 Layout.fillWidth: true
                 PlasmaComponents3.Label {
-                    text: tile.sni.title
+                    text: tile.pillTitle
                     color: tile.contentColor
                     font.bold: true
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
                 PlasmaComponents3.Label {
-                    visible: tile.sni.tooltip.length > 0 && tile.sni.tooltip !== tile.sni.title
-                    text: tile.sni.tooltip
+                    visible: tile.pillTooltip.length > 0 && tile.pillTooltip !== tile.pillTitle
+                    text: tile.pillTooltip
                     color: tile.contentColor
                     opacity: 0.8
                     font.pointSize: Kirigami.Theme.smallFont.pointSize

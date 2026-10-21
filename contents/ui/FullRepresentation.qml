@@ -284,12 +284,13 @@ Item {
         }
 
         // SNI pills row (M7) — StatusNotifierItems shown as QuickTile-style
-        // pills above the main tiles grid.  Either the user-pinned items
-        // only, or (M11) every live tray app when the setting is on.  Each
-        // pill's arrow opens the item's own context menu.  Hidden when
-        // nothing qualifies.
+        // pills above the main tiles grid.  In this position only the
+        // user-pinned items render ("show all" moves its pills below the
+        // tiles instead).  Each pill's arrow opens the item's own context
+        // menu.  Hidden when nothing qualifies.
         GridLayout {
             visible: full.backend.pillSniItems.length > 0
+                && !Plasmoid.configuration.showSniPills
             Layout.fillWidth: true
             columns: full.tileColumns
             rowSpacing: Kirigami.Units.smallSpacing
@@ -300,7 +301,6 @@ Item {
                 delegate: SniTile {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    sni: modelData
                     backend: full.backend
                 }
             }
@@ -482,6 +482,26 @@ Item {
             }
         }
 
+        // All-tray-apps pill row (M11): with "show all" enabled the pills sit
+        // AFTER the original tiles grid.
+        GridLayout {
+            visible: full.backend.pillSniItems.length > 0
+                && Plasmoid.configuration.showSniPills
+            Layout.fillWidth: true
+            columns: full.tileColumns
+            rowSpacing: Kirigami.Units.smallSpacing
+            columnSpacing: Kirigami.Units.smallSpacing
+
+            Repeater {
+                model: full.backend.pillSniItems
+                delegate: SniTile {
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    backend: full.backend
+                }
+            }
+        }
+
         // Extra height from resizing goes here, so the footer stays at the bottom.
         Item {
             Layout.fillWidth: true
@@ -610,7 +630,7 @@ Item {
             PlasmaComponents3.ToolButton {
                 visible: full.page === "notifications"
                 enabled: full.backend.notifHistoryCount > 0
-                icon.name: "trash-empty"
+                icon.name: "edit-clear-history"
                 PlasmaComponents3.ToolTip.text: i18n("Clear All Notifications")
                 PlasmaComponents3.ToolTip.visible: hovered
                 onClicked: full.backend.notifClearExpired()
