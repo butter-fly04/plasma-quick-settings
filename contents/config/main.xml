@@ -121,9 +121,9 @@
             <label>Show the media player card when a player is running.</label>
             <default>true</default>
         </entry>
-        <entry name="mediaOnTop" type="Bool">
-            <label>Place the media player card at the very top of the popup, above the battery pill and the system buttons.</label>
-            <default>false</default>
+        <entry name="mediaPosition" type="String">
+            <label>Where the media player card sits: top (above the header row), default (below the header), or belowpills (below the tray pill rows and above the footer rows).</label>
+            <default>default</default>
         </entry>
         <entry name="showTrayFooter" type="Bool">
             <label>Show the Tray &amp; Background Apps footer row.</label>

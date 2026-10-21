@@ -63,14 +63,16 @@ Item {
         enabled: opacity > 0.5
         scale: 1
 
-        // Media player card (M11) — two placements: the very top of the
-        // popup (above the battery pill and system buttons) or, default,
-        // right below the header row.  The setting toggles which wrapper
-        // shows; both use the same animated-height pattern.
+        // Media player card (M11) — three placements from the
+        // mediaPosition setting: the very top of the popup (above the
+        // battery pill and system buttons), right below the header row
+        // (default), or below both pill rows (tray pills included).  The
+        // setting picks which wrapper shows; all use the same
+        // animated-height pattern.
         Item {
             id: topMediaWrap
             visible: Plasmoid.configuration.showMediaCard
-                && Plasmoid.configuration.mediaOnTop
+                && Plasmoid.configuration.mediaPosition === "top"
             clip: true
             Layout.fillWidth: true
             implicitHeight: backend.mediaAvailable ? topMediaCard.implicitHeight : 0
@@ -226,7 +228,8 @@ Item {
         Item {
             id: mediaWrap
             visible: Plasmoid.configuration.showMediaCard
-                && !Plasmoid.configuration.mediaOnTop
+                && Plasmoid.configuration.mediaPosition !== "top"
+                && Plasmoid.configuration.mediaPosition !== "belowpills"
             clip: true
             Layout.fillWidth: true
             implicitHeight: backend.mediaAvailable ? backendCard.implicitHeight : 0
@@ -499,6 +502,28 @@ Item {
                     Layout.preferredWidth: 1
                     backend: full.backend
                 }
+            }
+        }
+
+        // Media card below all the pills (M11.2, third placement).
+        Item {
+            id: belowMediaWrap
+            visible: Plasmoid.configuration.showMediaCard
+                && Plasmoid.configuration.mediaPosition === "belowpills"
+            clip: true
+            Layout.fillWidth: true
+            implicitHeight: backend.mediaAvailable ? belowCard.implicitHeight : 0
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            MediaCard {
+                id: belowCard
+                anchors.fill: parent
+                backend: full.backend
             }
         }
 

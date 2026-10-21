@@ -37,7 +37,7 @@ KCM.SimpleKCM {
     property bool cfg_showLockButton
     property bool cfg_showPowerButton
     property bool cfg_showMediaCard
-    property bool cfg_mediaOnTop
+    property string cfg_mediaPosition
     property bool cfg_showTrayFooter
     property bool cfg_showDndInNotifications
     // Tray pills group
@@ -144,10 +144,20 @@ KCM.SimpleKCM {
             checked: cfg_showMediaCard
             onToggled: cfg_showMediaCard = checked
         }
-        QQC2.CheckBox {
-            text: i18n("Show media player at the top (above the header row)")
-            checked: cfg_mediaOnTop
-            onToggled: cfg_mediaOnTop = checked
+        QQC2.RadioButton {
+            text: i18n("Above everything (top of the popup)")
+            checked: cfg_mediaPosition === "top"
+            onToggled: if (checked) cfg_mediaPosition = "top"
+        }
+        QQC2.RadioButton {
+            text: i18n("Below the header row (default)")
+            checked: cfg_mediaPosition !== "top" && cfg_mediaPosition !== "belowpills"
+            onToggled: if (checked) cfg_mediaPosition = "default"
+        }
+        QQC2.RadioButton {
+            text: i18n("Below all the pills (above the footer rows)")
+            checked: cfg_mediaPosition === "belowpills"
+            onToggled: if (checked) cfg_mediaPosition = "belowpills"
         }
         QQC2.CheckBox {
             text: i18n("Tray & Background Apps footer")
