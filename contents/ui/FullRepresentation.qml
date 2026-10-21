@@ -63,6 +63,31 @@ Item {
         enabled: opacity > 0.5
         scale: 1
 
+        // Media player card (M11) — two placements: the very top of the
+        // popup (above the battery pill and system buttons) or, default,
+        // right below the header row.  The setting toggles which wrapper
+        // shows; both use the same animated-height pattern.
+        Item {
+            id: topMediaWrap
+            visible: Plasmoid.configuration.showMediaCard
+                && Plasmoid.configuration.mediaOnTop
+            clip: true
+            Layout.fillWidth: true
+            implicitHeight: backend.mediaAvailable ? topMediaCard.implicitHeight : 0
+            Behavior on implicitHeight {
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            MediaCard {
+                id: topMediaCard
+                anchors.fill: parent
+                backend: full.backend
+            }
+        }
+
         // Top row: battery pill + system buttons
         RowLayout {
             Layout.fillWidth: true
@@ -197,14 +222,11 @@ Item {
             }
         }
 
-        // Media player card (M5).  Hidden entirely when no MPRIS2 player
-        // is around, so the popup looks the same as before on systems
-        // without audio playback.  The wrapper animates its height so the
-        // card slides in/out instead of popping (and moving everything
-        // below it abruptly).
+        // Media card below the header (M11, default placement).
         Item {
             id: mediaWrap
             visible: Plasmoid.configuration.showMediaCard
+                && !Plasmoid.configuration.mediaOnTop
             clip: true
             Layout.fillWidth: true
             implicitHeight: backend.mediaAvailable ? backendCard.implicitHeight : 0
@@ -261,18 +283,20 @@ Item {
             onMoved: value => full.backend.setBrightness(value)
         }
 
-        // SNI pills row (M7) — pinned StatusNotifierItems shown as
-        // QuickTile-style pills above the main tiles grid.  Hidden entirely
-        // when the user hasn't pinned any.
+        // SNI pills row (M7) — StatusNotifierItems shown as QuickTile-style
+        // pills above the main tiles grid.  Either the user-pinned items
+        // only, or (M11) every live tray app when the setting is on.  Each
+        // pill's arrow opens the item's own context menu.  Hidden when
+        // nothing qualifies.
         GridLayout {
-            visible: full.backend.pinnedSniItems.length > 0
+            visible: full.backend.pillSniItems.length > 0
             Layout.fillWidth: true
             columns: full.tileColumns
             rowSpacing: Kirigami.Units.smallSpacing
             columnSpacing: Kirigami.Units.smallSpacing
 
             Repeater {
-                model: full.backend.pinnedSniItems
+                model: full.backend.pillSniItems
                 delegate: SniTile {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
@@ -580,6 +604,16 @@ Item {
                     }
                 }
                 Layout.fillWidth: true
+            }
+            // Notifications page: "clear all history" lives on the heading
+            // bar (M11) instead of a row of its own below the header.
+            PlasmaComponents3.ToolButton {
+                visible: full.page === "notifications"
+                enabled: full.backend.notifHistoryCount > 0
+                icon.name: "trash-empty"
+                PlasmaComponents3.ToolTip.text: i18n("Clear All Notifications")
+                PlasmaComponents3.ToolTip.visible: hovered
+                onClicked: full.backend.notifClearExpired()
             }
         }
 

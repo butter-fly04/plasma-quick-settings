@@ -37,7 +37,11 @@ KCM.SimpleKCM {
     property bool cfg_showLockButton
     property bool cfg_showPowerButton
     property bool cfg_showMediaCard
+    property bool cfg_mediaOnTop
     property bool cfg_showTrayFooter
+    property bool cfg_showDndInNotifications
+    // Tray pills group
+    property bool cfg_showSniPills
 
     Kirigami.FormLayout {
         QQC2.CheckBox {
@@ -146,16 +150,29 @@ KCM.SimpleKCM {
             onToggled: cfg_showTrayFooter = checked
         }
 
+        QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("Tray pills")
+            text: i18n("Show all system tray apps as pills")
+            checked: cfg_showSniPills
+            onToggled: cfg_showSniPills = checked
+        }
+
+        QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("Notifications page")
+            text: i18n("Show the Do Not Disturb switch")
+            checked: cfg_showDndInNotifications
+            onToggled: cfg_showDndInNotifications = checked
+        }
+
         // SNI pill hint — actual editing happens via the Tray page's right-click
         // action ("Pin to Quick Settings"), but we mention it here so the user
         // knows where to look.
         PlasmaComponents3.Label {
-            Kirigami.FormData.label: i18n("Tray pills")
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             opacity: 0.8
-            text: i18n("To add third-party tray icons (like IBus) as pills in the main grid, open the Tray page, right-click an item, and choose \"Pin to Quick Settings\".")
+            text: i18n("With this off, only icons pinned from the Tray page (right-click an item there and choose \"Pin to Quick Settings\") show as pills in the main grid.")
         }
     }
 }

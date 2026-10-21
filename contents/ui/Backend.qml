@@ -355,6 +355,14 @@ Item {
     // from Plasmoid.configuration.pinnedSnis (a StringList of "service|path"
     // pairs); we match each against the live traySniItems so the pill
     // always shows the current title/icon (which can change at any time).
+    // Which StatusNotifierItems get pills on the main page: every live
+    // tray app when the user enables the setting, otherwise only the ones
+    // pinned from the Tray page's right-click action.  traySniItems is
+    // refreshed while the popup is open (see the traypoll timer).
+    readonly property var pillSniItems: Plasmoid.configuration.showSniPills
+        ? traySniItems
+        : pinnedSniItems
+
     readonly property var pinnedSniItems: {
         const pinned = Plasmoid.configuration.pinnedSnis || []
         const live = traySniItems

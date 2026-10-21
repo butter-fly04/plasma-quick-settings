@@ -45,24 +45,19 @@ ColumnLayout {
 
     spacing: Kirigami.Units.smallSpacing
 
-    // --- Header: DND switch + Clear All button ---
+    // Optional "Do Not Disturb" switch.  Hidden by default — the main page
+    // already has a Do Not Disturb tile and the page heading carries the
+    // "clear history" button, so with the switch off this page is just
+    // heading + content: no filler row, no gap under the header.
     RowLayout {
+        visible: Plasmoid.configuration.showDndInNotifications
         Layout.fillWidth: true
-        spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents3.Switch {
             text: i18n("Do Not Disturb")
             enabled: page.backend.dndAvailable
             checked: page.backend.doNotDisturb
             onToggled: page.backend.setDoNotDisturb(checked)
-        }
-        Item { Layout.fillWidth: true }
-        PlasmaComponents3.ToolButton {
-            icon.name: "edit-clear-history"
-            enabled: page.backend.notifHistoryCount > 0
-            PlasmaComponents3.ToolTip.text: i18n("Clear All Notifications")
-            PlasmaComponents3.ToolTip.visible: hovered
-            onClicked: page.backend.notifClearExpired()
         }
     }
 

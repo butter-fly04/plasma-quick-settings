@@ -121,15 +121,27 @@
             <label>Show the media player card when a player is running.</label>
             <default>true</default>
         </entry>
+        <entry name="mediaOnTop" type="Bool">
+            <label>Place the media player card at the very top of the popup, above the battery pill and the system buttons.</label>
+            <default>false</default>
+        </entry>
         <entry name="showTrayFooter" type="Bool">
             <label>Show the Tray &amp; Background Apps footer row.</label>
             <default>true</default>
+        </entry>
+        <entry name="showDndInNotifications" type="Bool">
+            <label>Show the "Do Not Disturb" switch on the Notifications page (it is hidden by default; the main page has its own Do Not Disturb tile).</label>
+            <default>false</default>
         </entry>
 
         <!-- SNI pills — third-party tray icons promoted to the main grid -->
         <entry name="pinnedSnis" type="StringList">
             <label>List of StatusNotifierItem "service|path" pairs to show as pills in the main grid.  Pipe character separates the service from the D-Bus object path.</label>
             <default></default>
+        </entry>
+        <entry name="showSniPills" type="Bool">
+            <label>Show every system tray app as a pill in the main page (instead of only the pinned ones).  The pill's arrow opens its context menu.</label>
+            <default>false</default>
         </entry>
 
         <!-- Screenshot backend preference -->
