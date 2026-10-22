@@ -81,7 +81,13 @@ PlasmaCore.Dialog {
         Math.max(Kirigami.Units.gridUnit * 3, notifList.contentHeight
             + 2 * Kirigami.Units.smallSpacing)
 
-    mainItem: ColumnLayout {
+    // Main item is a plain (non-Layout) Item with explicit size: PlasmaCore.Dialog
+    // sizes its window from the mainItem's width/height — layouts keep
+    // overriding their own explicit width during implicit-size settling and
+    // then the window ends up wider/narrower than the content (the user's
+    // report: text/labels not filling the popup horizontally, floating
+    // labels overlapping the app icon).
+    mainItem: Item {
         id: toastContent
         width: toastDialog.toastWidth
         height: toastDialog.stackHeight
@@ -92,11 +98,11 @@ PlasmaCore.Dialog {
         // content so the dialog window sizes to the stack.
         ListView {
             id: notifList
+            anchors.fill: parent
+            anchors.margins: Kirigami.Units.smallSpacing
             interactive: false
             clip: true
             spacing: Kirigami.Units.smallSpacing
-            Layout.fillWidth: true
-            Layout.preferredHeight: contentHeight
             model: toastDialog.backend.notifToastModel
 
             delegate: Rectangle {
@@ -110,13 +116,19 @@ PlasmaCore.Dialog {
                 readonly property bool isFallbackIcon:
                     !(model.iconName ?? "") && !(model.applicationIconName ?? "")
 
-                Layout.fillWidth: true
+                width: notifList.width
+                height: rowLayout.implicitHeight
+                    + 2 * Kirigami.Units.smallSpacing
                 radius: Kirigami.Units.cornerRadius
+
+                // Each notification is its own boxed card: a subtle fill
+                // slightly lighter than the dialog background; hover
+                // brightens it.
                 color: toastRowArea.containsMouse
                     ? Qt.alpha(Kirigami.Theme.highlightColor, 0.35)
-                    : "transparent"
-                implicitHeight: rowLayout.implicitHeight
-                    + 2 * Kirigami.Units.smallSpacing
+                    : Qt.alpha(Kirigami.Theme.backgroundColor, 0.6)
+                border.width: 1
+                border.color: Qt.alpha(Kirigami.Theme.textColor, 0.10)
 
                 MouseArea {
                     id: toastRowArea
@@ -132,8 +144,9 @@ PlasmaCore.Dialog {
 
                 RowLayout {
                     id: rowLayout
-                    anchors.fill: parent
-                    anchors.margins: Kirigami.Units.smallSpacing
+                    x: Kirigami.Units.smallSpacing
+                    y: Kirigami.Units.smallSpacing
+                    width: toastRow.width - 2 * Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.largeSpacing
 
                     // Notification icon: the notification's own image/icon
@@ -143,8 +156,8 @@ PlasmaCore.Dialog {
                         visible: !toastRow.isFallbackIcon
                         source: (toastRow.model.iconName ?? "")
                             || (toastRow.model.applicationIconName ?? "")
-                        Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                        Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                        Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                        Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                         Layout.alignment: Qt.AlignTop
                     }
 
@@ -157,7 +170,9 @@ PlasmaCore.Dialog {
                             spacing: Kirigami.Units.smallSpacing
 
                             // App name + relative time on top — same two
-                            // lines the stock popup shows.
+                            // lines the stock popup shows.  The app name
+                            // stretches, so time + close sit at the
+                            // card's right edge.
                             PlasmaComponents3.Label {
                                 text: toastRow.model.applicationName ?? ""
                                 font.bold: true
