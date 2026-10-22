@@ -19,9 +19,6 @@ MouseArea {
 
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property int iconSize: Kirigami.Units.iconSizes.smallMedium
-    // Per-app tray icons render slightly larger: like the stock tray they
-    // carry meaningful color artwork, and a bit more pixels helps legibility.
-    readonly property int trayIconSize: Math.round(compact.iconSize * 1.15)
 
     // Tray apps minus the ones hidden from the panel (still listed in the
     // popup).  Keyed by "service|path" so items moving around don't unhide.
@@ -83,8 +80,11 @@ MouseArea {
                 required property int index
                 required property var modelData
 
-                Layout.preferredWidth: compact.trayIconSize
-                Layout.preferredHeight: compact.trayIconSize
+                // Same size as the unified icons and no internal padding:
+                // the icon fills the whole tile (the user asked for "as big
+                // as possible", the artwork becomes the entire glyph).
+                Layout.preferredWidth: compact.iconSize
+                Layout.preferredHeight: compact.iconSize
 
                 MouseArea {
                     id: panelSniArea
@@ -125,20 +125,33 @@ MouseArea {
                         anchors.fill: parent
                         radius: height / 2
                         color: Kirigami.Theme.textColor
-                        opacity: panelSniArea.pressed ? 0.25 : (panelSniArea.containsMouse ? 0.12 : 0)
+                        opacity: panelSniArea.pressed ? 0.15 : 0
                     }
 
                     Kirigami.Icon {
                         anchors.fill: parent
-                        anchors.margins: height * 0.08
                         source: panelSni.modelData.icon || "application-x-executable"
                         fallback: "application-x-executable"
                     }
 
-                    PlasmaComponents3.ToolTip.text: panelSni.modelData.title || ""
-                    PlasmaComponents3.ToolTip.visible: panelSniArea.containsMouse
+                    // The applet-level tooltip (positioned by the shell,
+                    // correctly above the panel) shows the tray icon's
+                    // title/tooltip while hovering; no per-icon ToolTip
+                    // window (its placement anchored wrong next to panels).
+                    // See main.qml: toolTipMainText/SubText swap while
+                    // panelHoverSni is set.
                 }
             }
+        }
+
+        // Small visual gap between the tray icon cluster and the
+        // applet's own unified icons (the grid already separated them,
+        // so this is just the little bit more the user asked for).
+        Item {
+            Layout.preferredWidth: compact.vertical
+                ? 0 : Kirigami.Units.smallSpacing
+            Layout.preferredHeight: compact.vertical
+                ? Kirigami.Units.smallSpacing : 0
         }
 
         // Privacy indicators only take space while active (Milestone 6).

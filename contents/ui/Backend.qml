@@ -757,15 +757,16 @@ Item {
         triggeredOnStart: true
         onTriggered: backend.pollColorScheme()
     }
-    // Tray (SNI list + Background Apps).  Slow when the popup is closed
-    // (these lists change rarely) and quick when the tray page is open so
-    // the user sees new items appear promptly.  Since M12 the panel also
-    // shows the SNIs as its own icons, so the poll must keep running with
-    // the popup closed when panel tray icons are enabled (otherwise
-    // pixmap-styled icons like IBus/Live Captions go stale); only fall
-    // back to idle-gating when the icons are turned off.
+    // Tray (SNI list + Background Apps).  Since M12 the panel shows SNIs as
+    // its own icons, so the poll runs whenever either the panel icons are
+    // shown or the popup is open — otherwise the pixmap-style icons
+    // (IBus layout swap, Live Captions state) lag seconds behind the stock
+    // tray.  400 ms keeps the perceived latency near instant at an
+    // acceptable bus cost (a handful of property reads per tick); fall
+    // back to the slower idle rate when panel icons are off.
     Timer {
-        interval: backend.popupOpen ? 2500 : 3000
+        interval: (backend.popupOpen || Plasmoid.configuration.showPanelTrayIcons)
+            ? 400 : 15000
         running: backend.popupOpen || Plasmoid.configuration.showPanelTrayIcons
         repeat: true
         triggeredOnStart: true

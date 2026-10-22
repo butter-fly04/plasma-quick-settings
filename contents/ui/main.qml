@@ -12,11 +12,13 @@ PlasmoidItem {
     preferredRepresentation: compactRepresentation
 
     // While the mouse is over one of the per-app tray icons the applet
-    // tooltip is suppressed entirely (both fields empty) so only the
-    // tray icon's own tooltip window shows.
+    // tooltip takes the tray icon's title/tooltip (shell-positioned above
+    // the panel instead of a per-icon popup window).
     readonly property bool hoverTrayIcon: qsBackend.panelHoverSni !== ""
-    toolTipMainText: hoverTrayIcon ? "" : i18n("Quick Settings")
-    toolTipSubText: hoverTrayIcon ? "" : qsBackend.summary
+    toolTipMainText: hoverTrayIcon
+        ? qsBackend.panelHoverSni : i18n("Quick Settings")
+    toolTipSubText: hoverTrayIcon
+        ? qsBackend.panelHoverSniTooltip : qsBackend.summary
 
     Backend {
         id: qsBackend
