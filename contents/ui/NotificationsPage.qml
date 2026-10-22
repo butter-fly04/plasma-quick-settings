@@ -32,6 +32,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import org.kde.coreaddons as KCoreAddons
+import org.kde.notificationmanager as NotificationManager
 
 ColumnLayout {
     id: page
@@ -108,6 +109,19 @@ ColumnLayout {
 
                 width: ListView.view.width
 
+                // Clicking a row with a default action invokes it — the same
+                // interaction the stock applet gives rows (Close behavior, so
+                // acting on a non-resident notification clears it).
+                onClicked: {
+                    if (notifRow.model.hasDefaultAction) {
+                        try {
+                            const idx = page.backend.notifHistoryModel.index(notifRow.index, 0)
+                            page.backend.notifHistoryModel.invokeDefaultAction(idx,
+                                NotificationManager.Notifications.Close)
+                        } catch (e) { /* ignore */ }
+                    }
+                }
+
                 contentItem: RowLayout {
                     spacing: Kirigami.Units.largeSpacing
 
@@ -182,20 +196,21 @@ ColumnLayout {
                                     text: modelData
                                     flat: true
                                     onClicked: {
-                                        // Invoke the action by its name (index
-                                        // in actionNames).  The stock applet
-                                        // does this via the model's setData
-                                        // with the InvokeActionRole, but the
-                                        // role id is private; we use a tiny
-                                        // helper that calls the action by
-                                        // index.  If the call fails silently
-                                        // (e.g. Plasma 6 changed the API),
-                                        // the button just does nothing.
+                                        // Invoke the action by its name; the
+                                        // model wraps it with a built-in proxy
+                                        // chain, so a top-level QModelIndex of
+                                        // row @ index works (same call the
+                                        // stock applet makes; upstream
+                                        // FullRepresentation.qml:551).
+                                        // Close behavior: after the user acts
+                                        // on a non-resident notification it
+                                        // goes away from history, like stock.
                                         const names = notifRow.model.actionNames ?? []
                                         if (index < names.length) {
                                             try {
                                                 const idx = page.backend.notifHistoryModel.index(notifRow.index, 0)
-                                                page.backend.notifHistoryModel.invokeAction(idx, names[index])
+                                                page.backend.notifHistoryModel.invokeAction(idx, names[index],
+                                                    NotificationManager.Notifications.Close)
                                             } catch (e) { /* ignore */ }
                                         }
                                     }
