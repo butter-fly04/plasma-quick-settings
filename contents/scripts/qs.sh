@@ -599,6 +599,78 @@ busctl_scalar() { # $1 = service, $2 = path, $3 = iface, $4 = property
             }'
 }
 
+# Render one SNI's IconPixmap (a(iiay)) to a PNG file and print its absolute
+# path — the fallback the stock plasma tray uses when IconName/IconThemePath
+# yield nothing.  IBus (ayatana proxied) and Plasma's Live Captions expose no
+# IconName at all, only a bitmap, which is why their pills showed a generic
+# "unknown" square instead of the real icon while the stock tray looked fine.
+#
+# Byte order per the StatusNotifierItem spec: ARGB32, big-endian bytes
+# (b0=A, b1=R, b2=G, b3=B) — the same reading plasma-workspace's
+# StatusNotifierItemSource does.  The PNG file name carries a CRC of the
+# image bytes so QML sees a fresh URL whenever the icon content changes
+# (e.g. IBus switching input methods); older files for the same item are
+# pruned so the cache does not grow without bound.
+sni_pixmap_icon() { # $1 = service, $2 = object path
+    have busctl && have python3 || return 1
+    cache=${XDG_CACHE_HOME:-$HOME/.cache}/quicksettings/sni-pix
+    mkdir -p "$cache" 2>/dev/null || return 1
+    # Drop icons not touched for a day (services are colon-id bus names that
+    # churn when apps restart, so the md5 keys never repeat across sessions).
+    find "$cache" -name "*.png" -mmin +1440 -delete 2>/dev/null
+    key=$(printf '%s|%s' "$1" "$2" | md5sum | cut -c1-12)
+    json=$(busctl --user call "$1" "$2" org.freedesktop.DBus.Properties Get ss \
+        org.kde.StatusNotifierItem IconPixmap --json=short 2>/dev/null)
+    [ -n "$json" ] || return 1
+
+    printf '%s' "$json" | python3 -c '
+import glob, json, os, struct, sys, zlib
+
+class Hashed:  # writes path + keeps a running content crc
+    def __init__(self, base):
+        self.base = base
+        self.images = 0
+    def run(self):
+        obj = json.load(sys.stdin) or {}
+        data = obj.get("data", [])[0].get("data", [[]]) if isinstance(obj, dict) else []
+        # data is [[w, h, [bytes...]], ...]  — pick the largest pixmap;
+        # the stock tray does the same (livecaptions sends 5 of 16x16).
+        pixmaps = [p for p in data if len(p) == 3 and isinstance(p[0], int) and isinstance(p[2], list)]
+        pixmaps = [p for p in pixmaps if p[0] > 0 and p[1] > 0 and len(p[2]) >= p[0] * p[1]]
+        if not pixmaps:
+            sys.exit()
+        w, h, raw = max(pixmaps, key=lambda p: p[0] * p[1])
+        self.w, self.h = w, h
+        self.raw = bytes(raw[:w * h * 4])
+        self.crc = zlib.crc32(self.raw) & 0xFFFFFFFF
+        self.path = "%s-%08x.png" % (self.base, self.crc)
+        for old in glob.glob(self.base + "-*.png"):
+            if old != self.path:
+                try: os.unlink(old)
+                except OSError: pass
+    def write(self):
+        body = bytearray()
+        for y in range(self.h):
+            body.append(0)  # filter: none, per scanline
+            row_start = y * self.w * 4
+            for x in range(self.w):
+                i = row_start + x * 4
+                a, r, g, b = self.raw[i], self.raw[i + 1], self.raw[i + 2], self.raw[i + 3]
+                body += bytes((r, g, b, a))
+        def chunk(t, d):
+            import binascii
+            return struct.pack(">I", len(d)) + t + d + struct.pack(">I", binascii.crc32(t + d) & 0xFFFFFFFF)
+        ihdr = struct.pack(">IIBBBBB", self.w, self.h, 8, 6, 0, 0, 0)
+        png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(body))) + chunk(b"IEND", b"")
+        open(self.path, "wb").write(png)  # noqa: SIM115 — process exits, no leak
+
+h = Hashed(sys.argv[1])
+h.run()
+h.write()
+print(h.path)
+' "$cache/$key" 2>/dev/null || return 1
+}
+
 # Fetch all StatusNotifierItem properties for one SNI in a single D-Bus
 # call (GetAll on org.freedesktop.DBus.Properties), then emit one
 # "sni=..." line.  This mirrors what the plasma-workspace
@@ -719,6 +791,27 @@ sni_describe() { # $1 = "service/path" pair from RegisteredStatusNotifierItems
     ICON=$(extract_string IconName)
     ISMENU=$(extract_string ItemIsMenu)
     TOOLTIP=$(extract_tooltip)
+
+    # busctl --full escapes non-printables, so a multiline Title (IBus
+    # Panel: its full help text is part of the title) arrives as literal
+    # "\n" characters — the pill then shows the whole help blob as its
+    # label.  Keep only the real title line for the label; the rest goes
+    # to the tooltip, newline-escaped as well (it is rendered on one line
+    # there anyway).
+    first_line() {
+        printf '%s' "$1" | awk '
+            { i = index($0, "\\n"); if (i > 0) print substr($0, 1, i - 1); else print; exit }'
+    }
+    XXX="$TITLE"
+    TITLE=$(first_line "$TITLE")
+    [ -n "$TITLE" ] || TITLE=$XXX
+
+    # No usable theme icon?  Then try the IconPixmap bitmap, like the
+    # stock tray does (IBus and Live Captions carry ONLY a pixmap).
+    if [ -z "$ICON" ]; then
+        ICON=$(sni_pixmap_icon "$svc" "$path")
+        [ -n "$ICON" ] || ICON=$procname
+    fi
 
     # PID-based fallback (matches what plasma-workspace's
     # StatusNotifierItemSource::resolveProcessName does, then takes the
