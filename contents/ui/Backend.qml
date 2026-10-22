@@ -737,11 +737,14 @@ Item {
     }
     // Tray (SNI list + Background Apps).  Slow when the popup is closed
     // (these lists change rarely) and quick when the tray page is open so
-    // the user sees new items appear promptly.  We only poll while the
-    // tray page is visible OR the popup is open, to spare the bus on idle.
+    // the user sees new items appear promptly.  Since M12 the panel also
+    // shows the SNIs as its own icons, so the poll must keep running with
+    // the popup closed when panel tray icons are enabled (otherwise
+    // pixmap-styled icons like IBus/Live Captions go stale); only fall
+    // back to idle-gating when the icons are turned off.
     Timer {
-        interval: backend.popupOpen ? 2500 : 15000
-        running: backend.popupOpen
+        interval: backend.popupOpen ? 2500 : 3000
+        running: backend.popupOpen || Plasmoid.configuration.showPanelTrayIcons
         repeat: true
         triggeredOnStart: true
         onTriggered: backend.pollTray()
