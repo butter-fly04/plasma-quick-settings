@@ -26,6 +26,7 @@
 */
 import QtQuick
 import QtQuick.Layouts
+import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
@@ -40,7 +41,10 @@ PlasmaCore.Dialog {
     // handled manually in position(); Floating means "arbitrary x/y, don't
     // snap to a panel edge".
     location: PlasmaCore.Types.Floating
-    flags: Qt.WindowDoesNotAcceptFocus
+    // The stock toasts live in KWin's dedicated notification layer (always
+    // on top, never focused).  WindowStaysOnTopHint approximates that layer
+    // without a KWin dependency; DoesNotAcceptFocus avoids keyboard grabs.
+    flags: Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint
 
     visible: Plasmoid.configuration.showNotificationPopups
         && backend.notifToastCount > 0
