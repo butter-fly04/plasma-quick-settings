@@ -41,6 +41,20 @@ Item {
 
     // Set from main.qml / FullRepresentation.qml
     property bool popupOpen: false
+
+    // Panel tray-icon hover state (M12.2): while the mouse is over one of
+    // the per-app panel icons, the applet's own tooltip is suppressed and
+    // the icon's tooltip takes over (see main.qml toolTipMainText).
+    property string panelHoverSni: ""
+    property string panelHoverSniTooltip: ""
+    function setPanelSniHover(title, tooltip) {
+        panelHoverSni = title || ""
+        panelHoverSniTooltip = tooltip || ""
+    }
+    function clearPanelSniHover() {
+        panelHoverSni = ""
+        panelHoverSniTooltip = ""
+    }
     property string activePage: "main"      // "main", "wifi", "bluetooth", "power", ...
     property bool listsPaused: false        // true while the user types a password
 
@@ -699,6 +713,14 @@ Item {
         if (sig !== oldSig) {
             trayLoader.item.sniItems = snis
             trayLoader.item.backgroundApps = bgApps
+            // Snapshot for the configuration page's per-icon hide list: the
+            // KCM pages cannot see runtime objects, only the configuration.
+            // "service|path|title" entries; write only when it changes.
+            const snapshot = snis.map(s =>
+                s.service + "|" + s.path + "|" + (s.title || "").split("\n")[0])
+            if (JSON.stringify(snapshot)
+                    !== JSON.stringify(Plasmoid.configuration.panelTrayIconList || []))
+                Plasmoid.configuration.panelTrayIconList = snapshot
         }
     }
     function pollTray() { run("traypoll", applyTrayPoll) }

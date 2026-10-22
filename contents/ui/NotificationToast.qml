@@ -46,25 +46,45 @@ PlasmaCore.Dialog {
     // without a KWin dependency; DoesNotAcceptFocus avoids keyboard grabs.
     flags: Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint
 
+    // Rely on the count only: gating visibility on the ling geometry is a
+    // deadlock — an invisible dialog never runs layout polish, so the height
+    // gate could never open (first toast never shows).  Instead the mainItem
+    // below reserves a nonzero height so the very first show is never the
+    // "trying to show an empty dialog" refusal.
     visible: Plasmoid.configuration.showNotificationPopups
         && backend.notifToastCount > 0
-
-    readonly property int sideMargin: Kirigami.Units.gridUnit
+    onVisibleChanged: {
+        if (visible) position()
+    }
 
     // Toast width ~ the stock popup's default (350px-ish); the height
     // follows the stacked content.
     readonly property int toastWidth: Kirigami.Units.gridUnit * 20
 
     function position() {
-        // Screen attached reflects the window's own screen.
-        x = Screen.desktopAvailableWidth - width - sideMargin
-        y = Screen.height - Screen.desktopAvailableHeight + sideMargin
+        // Screen reflects the toast window's screen; the fallbacks keep
+        // unhosted contexts (plasmoidviewer) from collapsing x/y to 0.
+        const availW = Screen.desktopAvailableWidth || Screen.width || 1920
+        const availH = Screen.desktopAvailableHeight || Screen.height || 1080
+        x = availW - width - sideMargin
+        y = (Screen.height - availH) + sideMargin
     }
-    onVisibleChanged: if (visible) position()
     onWidthChanged: if (visible) position()
+    onHeightChanged: if (visible) position()
+
+    readonly property int sideMargin: Kirigami.Units.gridUnit / 2
+
+    // Reserved minimum height for the stack: nonzero whenever the toast
+    // becomes visible, so the dialog never refuses the first show; the
+    // layout then grows/shrinks it with the stacked rows.
+    readonly property real stackHeight:
+        Math.max(Kirigami.Units.gridUnit * 3, notifList.contentHeight
+            + 2 * Kirigami.Units.smallSpacing)
 
     mainItem: ColumnLayout {
+        id: toastContent
         width: toastDialog.toastWidth
+        height: toastDialog.stackHeight
 
         // Rows of the currently-shown notifications.  The view itself
         // never scrolls: the daemon expires rows over time, and the
@@ -85,15 +105,18 @@ PlasmaCore.Dialog {
                 required property int index
                 required property var model
 
+                // True when no app-provided icon exists and the symbolic
+                // bell fallback is used (needs isMask coloring).
+                readonly property bool isFallbackIcon:
+                    !(model.iconName ?? "") && !(model.applicationIconName ?? "")
+
                 Layout.fillWidth: true
                 radius: Kirigami.Units.cornerRadius
                 color: toastRowArea.containsMouse
-                    ? Qt.alpha(Kirigami.Theme.highlightColor, 0.4)
-                    : Kirigami.Theme.backgroundColor
+                    ? Qt.alpha(Kirigami.Theme.highlightColor, 0.35)
+                    : "transparent"
                 implicitHeight: rowLayout.implicitHeight
-                    + Kirigami.Units.largeSpacing
-                border.width: 1
-                border.color: Kirigami.Theme.backgroundColor
+                    + 2 * Kirigami.Units.smallSpacing
 
                 MouseArea {
                     id: toastRowArea
@@ -113,13 +136,13 @@ PlasmaCore.Dialog {
                     anchors.margins: Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.largeSpacing
 
-                    // Notification icon: the notification's own image/icon,
-                    // falling back through the app icon to a bell.
+                    // Notification icon: the notification's own image/icon
+                    // or the app icon; NO icon at all when neither provides
+                    // one (the default bell artwork reads badly).
                     Kirigami.Icon {
+                        visible: !toastRow.isFallbackIcon
                         source: (toastRow.model.iconName ?? "")
                             || (toastRow.model.applicationIconName ?? "")
-                            || "preferences-desktop-notification"
-                        fallback: "preferences-desktop-notification"
                         Layout.preferredWidth: Kirigami.Units.iconSizes.small
                         Layout.preferredHeight: Kirigami.Units.iconSizes.small
                         Layout.alignment: Qt.AlignTop

@@ -153,6 +153,14 @@
             <label>Show each tray app as its own clickable icon in the panel, like the stock system tray.</label>
             <default>true</default>
         </entry>
+        <entry name="hiddenPanelSni" type="StringList">
+            <label>StatusNotifierItem "service|path" keys whose icons are hidden from the panel (still shown in the popup).</label>
+            <default></default>
+        </entry>
+        <entry name="panelTrayIconList" type="StringList">
+            <label>Maintained by the applet: "service|path|title" snapshot of the tray items for the configuration page.</label>
+            <default></default>
+        </entry>
         <entry name="screenshotBackend" type="String">
             <label>Screenshot tool to use.  One of: auto, spectacle, grim, flameshot, gnome-screenshot, maim.</label>
             <default>auto</default>

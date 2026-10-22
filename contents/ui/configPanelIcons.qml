@@ -11,6 +11,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
+import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
@@ -22,6 +23,10 @@ KCM.SimpleKCM {
     property bool cfg_showVolumeIcon
     property bool cfg_showBatteryIcon
     property bool cfg_showBatteryPercent
+    // Tray per-icon pass-through (keys live in the Tray group).
+    property bool cfg_showPanelTrayIcons
+    property var cfg_hiddenPanelSni
+    property var cfg_panelTrayIconList
 
     Kirigami.FormLayout {
         QQC2.CheckBox {
@@ -55,6 +60,50 @@ KCM.SimpleKCM {
             checked: cfg_showBatteryPercent
             onToggled: cfg_showBatteryPercent = checked
             enabled: cfg_showBatteryIcon
+        }
+
+        QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("System tray")
+            text: i18n("Show each tray app as its own icon in the panel")
+            checked: cfg_showPanelTrayIcons
+            onToggled: cfg_showPanelTrayIcons = checked
+        }
+
+        // Per-icon panel visibility: one checkbox per running tray app.
+        // The list comes from the snapshot the applet keeps in the
+        // configuration (Backend.qml applyTrayPoll); unchecked = hidden
+        // from the panel, the icon still shows in the popup's tray page.
+        PlasmaComponents3.Label {
+            visible: cfg_showPanelTrayIcons && (cfg_panelTrayIconList || []).length > 0
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            opacity: 0.8
+            text: i18n("Choose which tray app icons appear in the panel:")
+        }
+
+        Repeater {
+            model: cfg_showPanelTrayIcons ? (cfg_panelTrayIconList || []) : 0
+
+            delegate: QQC2.CheckBox {
+                required property string modelData
+
+                readonly property string sniKey: modelData.split("|").slice(0, 2).join("|")
+                readonly property string sniTitle: modelData.split("|").slice(2).join("||") || sniKey
+
+                text: sniTitle
+                visible: cfg_showPanelTrayIcons
+                checked: !((cfg_hiddenPanelSni || []).indexOf(sniKey) !== -1)
+                onToggled: {
+                    const hidden = (cfg_hiddenPanelSni || []).slice()
+                    const i = hidden.indexOf(sniKey)
+                    if (!checked && i === -1)
+                        hidden.push(sniKey)
+                    else if (checked && i !== -1)
+                        hidden.splice(i, 1)
+                    cfg_hiddenPanelSni = hidden
+                }
+            }
         }
     }
 }

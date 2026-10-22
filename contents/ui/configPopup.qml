@@ -44,6 +44,8 @@ KCM.SimpleKCM {
     property bool cfg_showSniPills
     property bool cfg_showNotificationPopups
     property bool cfg_showPanelTrayIcons
+    property var cfg_hiddenPanelSni
+    property var cfg_panelTrayIconList
 
     Kirigami.FormLayout {
         QQC2.CheckBox {
@@ -187,7 +189,7 @@ KCM.SimpleKCM {
 
         QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Panel")
-            text: i18n("Show each tray app as its own icon in the panel")
+            text: i18n("Show each tray app as its own icon in the panel (per-icon choices are in the Panel icons tab)")
             checked: cfg_showPanelTrayIcons
             onToggled: cfg_showPanelTrayIcons = checked
         }
