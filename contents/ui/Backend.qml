@@ -161,6 +161,29 @@ Item {
     function notifMarkAllRead() { if (notifHistoryLoader.item) notifHistoryLoader.item.markAllRead() }
     function notifClearExpired() { if (notifHistoryLoader.item) notifHistoryLoader.item.clearExpired() }
 
+    // --------------------------------------------------- Notification toasts (M12)
+    // Popup model, a copy of the stock notifications applet's
+    // popupNotificationsModel (see backends/NotificationPopupBackend.qml).
+    // There is no stock notifications applet on this system, so this
+    // applet owns the screen toasts — NotificationToast.qml renders them.
+    // The toast model keeps rows fresh on its own (the daemon's timers
+    // expire them); the popup only reads count/model.
+    Loader {
+        id: notifToastLoader
+        source: "backends/NotificationPopupBackend.qml"
+        onStatusChanged: if (status === Loader.Error)
+            console.warn("[QuickSettings] notifications-toast backend could not be loaded (org.kde.notificationmanager missing?)")
+    }
+    readonly property var notifToastModel: notifToastLoader.item ? notifToastLoader.item.model : null
+    readonly property int notifToastCount: notifToastLoader.item ? notifToastLoader.item.count : 0
+
+    function notifToastClose(index) { if (notifToastLoader.item) notifToastLoader.item.close(index) }
+    function notifToastExpire(index) { if (notifToastLoader.item) notifToastLoader.item.expire(index) }
+    function notifToastConfigure(index) { if (notifToastLoader.item) notifToastLoader.item.configure(index) }
+    function notifToastInvokeDefault(index) { if (notifToastLoader.item) notifToastLoader.item.invokeDefaultAction(index) }
+    function notifToastInvokeAction(index, actionName) { if (notifToastLoader.item) notifToastLoader.item.invokeAction(index, actionName) }
+
+
     // ----------------------------------------------------- Night Color (M4)
     // KWin owns this; we talk to org.kde.KWin.NightLight through qs.sh.
     Loader {

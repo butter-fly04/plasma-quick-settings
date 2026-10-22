@@ -145,6 +145,14 @@
         </entry>
 
         <!-- Screenshot backend preference -->
+        <entry name="showNotificationPopups" type="Bool">
+            <label>Show screen pop-up notifications when they arrive (there is no stock notifications applet on this system, so this applet owns the toasts).</label>
+            <default>true</default>
+        </entry>
+        <entry name="showPanelTrayIcons" type="Bool">
+            <label>Show each tray app as its own clickable icon in the panel, like the stock system tray.</label>
+            <default>true</default>
+        </entry>
         <entry name="screenshotBackend" type="String">
             <label>Screenshot tool to use.  One of: auto, spectacle, grim, flameshot, gnome-screenshot, maim.</label>
             <default>auto</default>

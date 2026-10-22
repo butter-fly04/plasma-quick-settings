@@ -42,6 +42,8 @@ KCM.SimpleKCM {
     property bool cfg_showDndInNotifications
     // Tray pills group
     property bool cfg_showSniPills
+    property bool cfg_showNotificationPopups
+    property bool cfg_showPanelTrayIcons
 
     Kirigami.FormLayout {
         QQC2.CheckBox {
@@ -184,10 +186,22 @@ KCM.SimpleKCM {
         }
 
         QQC2.CheckBox {
+            Kirigami.FormData.label: i18n("Panel")
+            text: i18n("Show each tray app as its own icon in the panel")
+            checked: cfg_showPanelTrayIcons
+            onToggled: cfg_showPanelTrayIcons = checked
+        }
+
+        QQC2.CheckBox {
             Kirigami.FormData.label: i18n("Notifications page")
             text: i18n("Show the Do Not Disturb switch")
             checked: cfg_showDndInNotifications
             onToggled: cfg_showDndInNotifications = checked
+        }
+        QQC2.CheckBox {
+            text: i18n("Show pop-up notifications on the screen")
+            checked: cfg_showNotificationPopups
+            onToggled: cfg_showNotificationPopups = checked
         }
     }
 }

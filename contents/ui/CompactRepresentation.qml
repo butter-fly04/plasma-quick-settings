@@ -116,5 +116,64 @@ MouseArea {
             text: compact.backend.batteryPercent + "%"
             Layout.alignment: Qt.AlignVCenter
         }
+
+        // Milestone 12: every tray app as its own clickable panel icon, like
+        // the stock system tray.  Rendered in real colours (no isMask) — tray
+        // app icons are meaningful artwork, status indicators.  Left-click
+        // activates the item, right-click opens its own context menu.
+        Repeater {
+            model: Plasmoid.configuration.showPanelTrayIcons
+                ? compact.backend.traySniItems : 0
+
+            delegate: Item {
+                id: panelSni
+
+                required property int index
+                required property var modelData
+
+                Layout.preferredWidth: compact.iconSize
+                Layout.preferredHeight: compact.iconSize
+
+                MouseArea {
+                    id: panelSniArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    cursorShape: Qt.PointingHandCursor
+
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.RightButton) {
+                            // Own menu, like the stock tray on right-click;
+                            // the icon item is the anchor so the menu opens
+                            // next to this icon.
+                            compact.backend.trayContextMenu(
+                                panelSni.modelData.service,
+                                panelSni.modelData.path, false, panelSni)
+                        } else {
+                            compact.backend.trayActivate(
+                                panelSni.modelData.service,
+                                panelSni.modelData.path)
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: height / 2
+                        color: Kirigami.Theme.textColor
+                        opacity: panelSniArea.pressed ? 0.25 : (panelSniArea.containsMouse ? 0.12 : 0)
+                    }
+
+                    Kirigami.Icon {
+                        anchors.fill: parent
+                        anchors.margins: height * 0.08
+                        source: panelSni.modelData.icon || "application-x-executable"
+                        fallback: "application-x-executable"
+                    }
+
+                    PlasmaComponents3.ToolTip.text: panelSni.modelData.title || ""
+                    PlasmaComponents3.ToolTip.visible: panelSniArea.containsMouse
+                }
+            }
+        }
     }
 }

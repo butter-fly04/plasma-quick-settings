@@ -28,4 +28,10 @@ PlasmoidItem {
         plasmoidItem: root
         backend: qsBackend
     }
+
+    // Milestone 12: screen toasts.  Instantiated at the applet top level (not
+    // inside the popup) so they show while the popup is closed too.
+    NotificationToast {
+        backend: qsBackend
+    }
 }
