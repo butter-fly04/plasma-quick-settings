@@ -666,9 +666,12 @@ Item {
         }
         // Only update if the signature changed, to avoid needless ListView
         // rebuilds while the popup is open (same trick as the Wi-Fi list).
-        const sig = (snis.map(s => s.service + "@" + s.path).join("\u0001"))
+        // The icon is part of the signature: some SNIs (IBus proxy) swap
+        // their pixmap in place (input layout changes) while keeping the
+        // same service/path, and the swap must survive this check.
+        const sig = (snis.map(s => s.service + "@" + s.path + "@" + s.icon).join("\u0001"))
                   + "\u0002" + (bgApps.map(a => a.appId).join("\u0001"))
-        const oldSig = (backend.traySniItems.map(s => s.service + "@" + s.path).join("\u0001"))
+        const oldSig = (backend.traySniItems.map(s => s.service + "@" + s.path + "@" + s.icon).join("\u0001"))
                   + "\u0002" + (backend.trayBackgroundApps.map(a => a.appId).join("\u0001"))
         if (sig !== oldSig) {
             trayLoader.item.sniItems = snis
