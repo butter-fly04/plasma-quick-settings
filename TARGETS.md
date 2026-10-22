@@ -12,11 +12,10 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
 
 ## M12.2 polish round (user request, Oct 22)
 
-- **Second toast race / first toast missing** — partial: toasts appear again;
-  *first* notification still silently missing (user parked this).
-- ~~Toast UI restyle: dark disc behind bell, spacing~~ — symbolic fallback done,
-  row highlight softened, reserved stack height.
-- ~~Remove the fallback notification icon entirely~~ (v0.12.4, verified).
+- ~~Toast UI restyle: dark disc behind bell, spacing~~ — v0.12.6: full-width
+  content (plain-Item mainItem with explicit sizing), boxed rows, no overlap.
+- ~~No fallback bell icon~~ — v0.12.4, verified.
+- **First toast missing after a fresh session** — parked; hints in WORKLOG.md.
 - ~~Panel tray icons left of the applet icons~~ — done & verified.
 - ~~Panel tray icons slightly larger~~ — superseded: v0.12.5 renders them at
   exactly the unified size, artwork fills the tile, no padding/hover ring.
