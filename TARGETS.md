@@ -15,13 +15,16 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
 - **Second toast race / first toast missing** — partial: toasts appear again;
   *first* notification still silently missing (user parked this).
 - ~~Toast UI restyle: dark disc behind bell, spacing~~ — symbolic fallback done,
-  row highlight softened, reserved stack height. User still unhappy: **remove the
-  fallback notification icon entirely** (icon only when the app provides one).
+  row highlight softened, reserved stack height.
+- ~~Remove the fallback notification icon entirely~~ (v0.12.4, verified).
 - ~~Panel tray icons left of the applet icons~~ — done & verified.
-- ~~Panel tray icons slightly larger~~ — done & verified (15% bigger).
-- ~~Tooltip switch when hovering tray icons~~ — deployed; user-verifying.
-- **Per-icon show/hide config** — plumbing verified (journal shows the pages receive
-  the list); UI moved to the *Panel icons* config tab; **await user verification**.
+- ~~Panel tray icons slightly larger~~ — superseded: v0.12.5 renders them at
+  exactly the unified size, artwork fills the tile, no padding/hover ring.
+- ~~Tooltip switch when hovering tray icons~~ — final form (v0.12.5): the
+  shell-positioned plasmoid tooltip shows title + app tooltip.
+- ~~Per-icon show/hide config~~ — done & verified (v0.12.4, Panel icons tab).
+- ~~Tray icon update latency~~ — v0.12.5: 400 ms poll while panel icons shown.
+- ~~Small gap between tray icons and unified icons~~ — user-tuned, v0.12.5.
 
 ## Explicit user workflow rules
 
