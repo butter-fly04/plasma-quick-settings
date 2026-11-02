@@ -15,15 +15,31 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
 - ~~Toast UI restyle: dark disc behind bell, spacing~~ — v0.12.6: full-width
   content (plain-Item mainItem with explicit sizing), boxed rows, no overlap.
 - ~~No fallback bell icon~~ — v0.12.4, verified.
-- **First toast missing after a fresh session** — parked; hints in WORKLOG.md.
+- **First toast missing after a fresh session** — parked; v0.12.7 carries the
+  stock-style imperative show fix, still needs a real-shell fresh-session test.
+  Hints in WORKLOG.md.
 - ~~Panel tray icons left of the applet icons~~ — done & verified.
 - ~~Panel tray icons slightly larger~~ — superseded: v0.12.5 renders them at
   exactly the unified size, artwork fills the tile, no padding/hover ring.
 - ~~Tooltip switch when hovering tray icons~~ — final form (v0.12.5): the
   shell-positioned plasmoid tooltip shows title + app tooltip.
 - ~~Per-icon show/hide config~~ — done & verified (v0.12.4, Panel icons tab).
-- ~~Tray icon update latency~~ — v0.12.5: 400 ms poll while panel icons shown.
+- ~~Tray icon update latency~~ — v0.12.7: event-driven `StatusNotifierModel`,
+  stock latency, no polling (supersedes the v0.12.5 400 ms poll).
 - ~~Small gap between tray icons and unified icons~~ — user-tuned, v0.12.5.
+
+## M12.3 tray fidelity (user request, Nov 2)
+
+- ~~Instant tray icon updates~~ — v0.12.7: live `StatusNotifierModel` bridge,
+  verified by user.
+- ~~Battery panel icon shows charging state~~ — v0.12.7: un-masked battery icon
+  (Breeze's coloured charging bolt), verified by user.
+- ~~Stock press-bounce on tray icons~~ — v0.12.7: scale 0.8 on press with
+  OutCubic/InCubic, panel icons + Tray page rows + SNI pills, verified by user.
+- ~~Left click on menu-only tray items opens the menu~~ — v0.12.7:
+  `ItemIsMenu` fallback plus D-Bus `Activate` failure fallback, verified by user.
+- ~~Retire the tray watch daemon~~ — v0.12.7: daemon + `file://` XHR ladder
+  removed; background apps use `qs.sh bgpoll` (5 s popup / 30 s idle).
 
 ## Explicit user workflow rules
 

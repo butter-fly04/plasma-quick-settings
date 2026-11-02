@@ -3,41 +3,75 @@
 Live summary of the project state; kept up to date by the assistant. Targets live in `TARGETS.md`.
 Versions are git tags (`git tag -l 'v*'`), one point release per verified iteration.
 
-## Current state (after v0.12.3, working tree beyond)
+## Current state (after v0.12.7)
 
-- **v0.12.3** (`6d71ae9`) is the last tagged release: toasts working (2nd notification),
-  tray poll fixed, history action close semantics fixed.
-- Working tree (uncommitted) contains the M12.2 polish round — deployed locally, verified by user where noted:
+- **v0.12.7** (this release): the tray is now event-driven using plasma-workspace's own
+  `StatusNotifierModel` (the exact model the stock systemtray renders), the panel battery
+  icon shows the charging state again, and tray icons have the stock press-bounce with a
+  left-click fallback to the context menu for menu-only items.
+- **v0.12.6**: toast row layout (full-width content, boxed rows, no overlap).
+- **v0.12.5**: panel tray icon polish (full-size glyphs, faster polling — superseded by
+  v0.12.7's event-driven model).
+- **v0.12.4**: panel tray icons moved left of the applet icons, per-icon show/hide config.
+- **v0.12.3**: history action close semantics.
 
-### Verified working
-- Toasts appear again after the layout deadlock fix (`stackHeight` reserved height in `NotificationToast.qml`);
-  the *first* notification still doesn't show — parked, see targets.
-- Per-app panel tray icons moved LEFT of the applet icons, slightly larger (1.15 × iconSize).
-- Applet tooltip suppressed while hovering a panel tray icon (SNI title/tooltip takes over —
-  `Backend.setPanelSniHover/clearPanelSniHover` + `main.qml` bindings).
-- Per-icon config plumbing: `Backend.applyTrayPoll` writes a `panelTrayIconList` snapshot
-  ("service|path|title" entries) into the configuration; KCM pages can read it via
-  `cfg_panelTrayIconList` (verified in journal: the pages DO receive the list).
-- Per-icon checkboxes moved to the **Panel icons** config tab (was accidentally in
-  "Popup contents" — that's why they "didn't appear" first).
+### Verified working (v0.12.7)
+
+- **Instant tray updates.** `contents/ui/backends/TrayModelBackend.qml` instantiates
+  `org.kde.plasma.private.systemtray`'s `StatusNotifierModel` and flattens it into the
+  `{title, icon, tooltip, isMenu, service, path}` array the applet already used.
+  `NewIcon`/`NewTitle`/`NewStatus`/`NewToolTip` are pushed by `StatusNotifierItemHost`,
+  so panel icons, SNI pills and the Tray page repaint at stock latency. No poll timer,
+  no subprocesses, no cache file. Verified end-to-end with an instrumented applet.
+- **Battery charging icon.** `BatteryBackend` already selected `battery-*-charging`, but
+  both panel and popup rendered it with `isMask: true`, flattening Breeze's coloured
+  charging bolt. Both now use plain `Kirigami.Icon`, like stock `BatteryIcon.qml`.
+- **Stock click bounce.** Panel tray icons scale to 0.8 while pressed with
+  `OutCubic`/`InCubic` `Behavior` (stock `AbstractItem.qml`); Tray page rows and SNI
+  pills bounce too.
+- **Left-click fallback.** Menu-only items (`ItemIsMenu`) open their menu on left click,
+  like stock's `ItemIsMenu ? openContextMenu : activate`. If `Activate` itself fails on
+  D-Bus, `Backend.trayActivate` also falls back to the context menu.
+- **Daemon retired.** The resident `tray-watch-daemon.py` and the `file://` XHR/mode
+  ladder were removed; background apps (not exported to QML by plasma-workspace) use a
+  new lightweight `qs.sh bgpoll` on a slow timer (5 s popup / 30 s idle).
+- **Safety net kept.** If the private tray module cannot be loaded, `TrayBackend.qml`
+  falls back to the old `qs.sh traypoll` path automatically.
 
 ### In progress / next
-- Remove the fallback bell icon from toast rows (done in tree: icon hidden when
-  the notification provides none) — verify with user.
-- Per-icon checkbox UI — verify with user after the page move.
-- First-notification toast missing — deadlock analysis: an invisible
-  PlasmaCore.Dialog never runs layout polish; current approach reserves a fixed minimum
-  stack height (12px-ish) so the "trying to show an empty dialog" refusal can't trigger;
-  first toast still misses for the user, root cause not yet isolated. Parked at user request.
+
+- **First toast missing after a fresh session** — parked. v0.12.7 carries the stock-style
+  imperative show (`visible: false`, `Connections` on `notifToastCount`, `position()` then
+  `visible = true`) plus the toast toggle handler. The temporary `[QS]` probes were
+  removed; the fix still needs a real-shell fresh-session test (plasmoidviewer cannot
+  own `org.freedesktop.Notifications`).
+- Toast duplication when the stock notifications applet is also present — verify whether
+  that is still reachable / desired.
 
 ## Key learnings (keep for future iterations)
 
 - **Deploy**: `rsync -a --checksum` silently skips files on this box — always deploy
   `cp -r contents/. <target>/contents/` + `cp metadata.json` + `diff -r` → `SYNC-OK`.
+- **QML `XMLHttpRequest` on `file://` is unusable on this Qt 6.7 build**: `send()`
+  succeeds but `readyState` never reaches 4 (no error, no callback). Verified with an
+  instrumented applet. Do not build data paths on local-file XHR.
+- **`StatusNotifierModel` is exported to QML** by plasma-workspace for plasma-mobile
+  (`QML_ELEMENT`, default constructor). It is the stock event-driven SNI list and works
+  inside a normal applet. Roles used: `Title`, `ToolTipTitle`, `ToolTipSubTitle`,
+  `Icon`, `IconName`, `ItemIsMenu`, `Status`, `DataEngineSource` ("service/path").
+- **Never read `effectiveStatus`** from a default-constructed `StatusNotifierModel`:
+  `BaseModel::calculateEffectiveStatus` dereferences the optional `SystemTraySettings`,
+  which is null for the QML-exported constructor → segfault. `status` is safe.
+- **Pixmap SNIs**: `model.Icon` returns a `QIcon`; pass it straight to `Kirigami.Icon.source`
+  (QVariant) like stock does. Theme icons arrive as `IconName`. Prefer `Icon || IconName`.
+- **Battery icons must not be masked**: Breeze's `-charging` variants encode the bolt in
+  `ColorScheme-PositiveText`; `isMask: true` collapses it to the same white as the body.
+- **Click bounce**: scale the icon container to 0.8 while pressed with
+  `Behavior { NumberAnimation { duration: longDuration; easing OutCubic/InCubic } }`.
 - **plasmoidviewer limitations**: never owns `org.freedesktop.Notifications`
   (plasmashell owns the name → PopupNotifications model always count=0 there).
-  Fake-model harness (`/tmp/opencode/toastpreview-main.qml` → snitest `contents/ui/main.qml`)
-  renders the toast dialog but plasmoidviewer draws dialogs unreliably (empty squares).
+  QML `console.log` is swallowed; to debug an applet under plasmoidviewer, log through a
+  `Plasma5Support.DataSource` (`engine: "executable"`) to a file.
 - **Notification plumbing**: `Server::self()`/`NotificationsModel` is per-process;
   inside real plasmashell the applet shares the process with the service owner —
   toasts MUST be tested in real plasmashell (user restart of the shell).
@@ -51,7 +85,7 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
 
 ## Test harnesses
 
-- `/tmp/opencode/snitest/` applet copy + `harness-main.qml` (pills) /
-  `toastpreview-main.qml` (fake toast backend).
+- Applet-under-plasmoidviewer probe: log via `Plasma5Support.DataSource` to
+  `/tmp/opencode/probe.log`; useful for model/component loading checks.
 - Test notification with actions: `python3 /tmp/opencode/actnotify.py` (dbus, non-blocking).
 - Screenshot: `spectacle -b -n -o file.png`.
