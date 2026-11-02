@@ -107,17 +107,19 @@ MouseArea {
                     }
 
                     onClicked: mouse => {
-                        if (mouse.button === Qt.RightButton) {
-                            // Own menu, like the stock tray on right-click;
-                            // the icon item is the anchor so the menu opens
-                            // next to this icon.
+                        // Like the stock tray: right-click always opens the
+                        // item's own menu, and a left-click does the same for
+                        // menu-only items (ItemIsMenu) — those have no
+                        // Activate action to call.
+                        if (mouse.button === Qt.RightButton
+                                || panelSni.modelData.isMenu) {
                             compact.backend.trayContextMenu(
                                 panelSni.modelData.service,
                                 panelSni.modelData.path, false, panelSni)
                         } else {
                             compact.backend.trayActivate(
                                 panelSni.modelData.service,
-                                panelSni.modelData.path)
+                                panelSni.modelData.path, panelSni)
                         }
                     }
 
@@ -128,10 +130,27 @@ MouseArea {
                         opacity: panelSniArea.pressed ? 0.15 : 0
                     }
 
-                    Kirigami.Icon {
+                    // The stock tray icon "bounces": the glyph shrinks to
+                    // 80 % while the button is held (AbstractItem.qml) and
+                    // springs back on release.  Scaling only the icon (not
+                    // the hover background) matches that.
+                    Item {
+                        id: iconHolder
                         anchors.fill: parent
-                        source: panelSni.modelData.icon || "application-x-executable"
-                        fallback: "application-x-executable"
+                        scale: panelSniArea.pressed ? 0.8 : 1
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: Kirigami.Units.longDuration
+                                easing.type: panelSniArea.pressed
+                                    ? Easing.OutCubic : Easing.InCubic
+                            }
+                        }
+
+                        Kirigami.Icon {
+                            anchors.fill: parent
+                            source: panelSni.modelData.icon || "application-x-executable"
+                            fallback: "application-x-executable"
+                        }
                     }
 
                     // The applet-level tooltip (positioned by the shell,
@@ -196,9 +215,13 @@ MouseArea {
             Layout.preferredWidth: compact.iconSize
             Layout.preferredHeight: compact.iconSize
         }
+        // Battery: NOT rendered as a mask.  The stock applet's icon
+        // (components/workspace/BatteryIcon.qml) uses Kirigami.Icon
+        // directly, which keeps the Breeze "-charging" variant's coloured
+        // interior (ColorScheme-PositiveText, blue/green in the default
+        // themes) visible — the white-on-white mask made charging and
+        // discharging look identical.
         Kirigami.Icon {
-            isMask: true
-            color: Kirigami.Theme.textColor
             visible: compact.backend.hasBattery
                     && Plasmoid.configuration.showBatteryIcon
             source: compact.backend.batteryIcon

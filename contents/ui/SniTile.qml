@@ -71,8 +71,17 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: {
+            // Menu-only items have no Activate action: fall back to the
+            // right-click action (open the item's menu), like the stock
+            // tray's `ItemIsMenu ? openContextMenu : activate`.
+            if (tile.sni.isMenu) {
+                tile.menuRequested()
+                tile.backend.trayContextMenu(tile.sni.service, tile.sni.path,
+                                             false, tile)
+                return
+            }
             tile.activated()
-            tile.backend.trayActivate(tile.sni.service, tile.sni.path)
+            tile.backend.trayActivate(tile.sni.service, tile.sni.path, tile)
         }
 
         Rectangle {
@@ -83,10 +92,20 @@ Item {
         }
 
         RowLayout {
+            id: content
             anchors.fill: parent
             anchors.leftMargin: Kirigami.Units.largeSpacing
             anchors.rightMargin: Kirigami.Units.smallSpacing
             spacing: Kirigami.Units.smallSpacing
+
+            // Same press-bounce the stock tray has.
+            scale: mainArea.pressed ? 0.92 : 1
+            Behavior on scale {
+                NumberAnimation {
+                    duration: Kirigami.Units.longDuration
+                    easing.type: mainArea.pressed ? Easing.OutCubic : Easing.InCubic
+                }
+            }
 
             Kirigami.Icon {
                 isMask: true

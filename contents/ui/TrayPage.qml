@@ -91,7 +91,17 @@ ColumnLayout {
 
                     Layout.fillWidth: true
 
-                    onClicked: page.backend.trayActivate(modelData.service, modelData.path)
+                    // Menu-only items (ItemIsMenu) have no Activate action;
+                    // left click then does what a right click does, exactly
+                    // like the stock tray.
+                    onClicked: {
+                        if (modelData.isMenu)
+                            page.backend.trayContextMenu(modelData.service,
+                                                         modelData.path, true, sniRow)
+                        else
+                            page.backend.trayActivate(modelData.service,
+                                                     modelData.path, sniRow, true)
+                    }
 
                     // Right-click opens the app's OWN context menu directly
                     // (pin/unpin rides along as a footer entry of that menu,
@@ -108,11 +118,20 @@ ColumnLayout {
                     contentItem: RowLayout {
                         spacing: Kirigami.Units.largeSpacing
 
+                        // Real colours: pixmap-only items (IBus, Live
+                        // Captions) are meaningful artwork, and the
+                        // charging-style coloured variants must survive.
+                        // The press-bounce matches the stock tray icon.
                         Kirigami.Icon {
-                            isMask: true
-                            color: Kirigami.Theme.textColor
                             source: sniRow.modelData.icon || "application-x-executable"
                             fallback: "application-x-executable"
+                            scale: sniRow.down ? 0.8 : 1
+                            Behavior on scale {
+                                NumberAnimation {
+                                    duration: Kirigami.Units.longDuration
+                                    easing.type: sniRow.down ? Easing.OutCubic : Easing.InCubic
+                                }
+                            }
                             Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
                             Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                         }
@@ -190,8 +209,6 @@ ColumnLayout {
                         spacing: Kirigami.Units.largeSpacing
 
                         Kirigami.Icon {
-                            isMask: true
-                            color: Kirigami.Theme.textColor
                             source: bgRow.modelData.appId || "application-x-executable"
                             fallback: "application-x-executable"
                             Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium

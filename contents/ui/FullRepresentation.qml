@@ -117,9 +117,9 @@ Item {
                     id: batteryRow
                     anchors.centerIn: parent
                     spacing: Kirigami.Units.smallSpacing
+                    // Not a mask: keeps the Breeze "-charging" variant's
+                    // coloured interior, like the stock battery applet.
                     Kirigami.Icon {
-                        isMask: true
-                        color: Kirigami.Theme.textColor
                         source: full.backend.batteryIcon
                         fallback: "battery"
                         Layout.preferredWidth: Kirigami.Units.iconSizes.small

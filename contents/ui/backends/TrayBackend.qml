@@ -3,31 +3,34 @@
 
     Tray & Background Apps state.
 
-    The stock plasma-workspace systemtray applet is a ContainmentItem — it
-    can't be embedded inside another applet's popup.  Its private models
-    (`StatusNotifierModel`, `BackgroundAppsModel`) live in
-    `org.kde.plasma.private.systemtray`, a private QML module that's
-    explicitly unstable across Plasma releases.
+    StatusNotifier items
+    --------------------
+    The panel icons and the Tray page need the live SNI list.  The stock
+    systemtray applet renders `StatusNotifierModel`, a model kept up to
+    date by `StatusNotifierItemHost` through session-bus signals;
+    plasma-workspace exports that model to QML (for plasma-mobile), so we
+    instantiate it through `TrayModelBackend.qml`.  That gives exactly the
+    stock latency: a NewIcon/NewTitle/NewStatus signal updates the model,
+    the model updates this array, the icons repaint — no polling and no
+    subprocesses.
 
-    Per PLAN.md M6 notes, we go with **option (a)**: connect to the public
-    D-Bus interfaces directly, the same ones the private models wrap:
+    If the private module cannot be loaded (non-Plasma platform, renamed
+    module), a Loader error leaves `usingModel` false and the old
+    `qs.sh traypoll` path in Backend.qml keeps working unchanged.
 
-      - StatusNotifierItems: `org.kde.StatusNotifierWatcher` at
-        `/StatusNotifierWatcher` (session bus) exposes
-        `RegisteredStatusNotifierItems` — a QStringList of "service/path"
-        pairs.  Each item is then an `org.kde.StatusNotifierItem` at the
-        given service+path, with `Icon`, `Title`, `ToolTip`, `Menu`, and
-        an `Activate(x, y)` method.
-      - Background Apps: `org.freedesktop.background.Monitor` at
-        `/org/freedesktop/background/monitor` exposes `BackgroundApps` —
-        a list of `{app_id, message, instance}`.  Methods: `OpenApp(app_id)`,
-        `StopApp(instance)`.
+    Background apps
+    ---------------
+    `org.freedesktop.background.Monitor` at
+    `/org/freedesktop/background/monitor` exposes `BackgroundApps` — a list
+    of `{app_id, message, instance}`.  Methods: `OpenApp(app_id)`,
+    `StopApp(instance)`.  There is no QML-exported model for it in
+    plasma-workspace, so this list still comes from `qs.sh traypoll`
+    (polled slowly; it is only shown on the Tray page).
 
-    All D-Bus access goes through `../scripts/qs.sh` (run via the executable
+    All D-Bus calls go through `../scripts/qs.sh` (run via the executable
     engine in Backend.qml, the existing pattern).  The script writes one
     line per SNI / background app in a `key=value` format Backend.qml
-    parses; the resulting arrays are exposed here as `sniItems` and
-    `backgroundApps`.
+    parses.
 
     If `busctl` is missing, or the watcher service isn't registered (no
     system tray running), the lists stay empty and the Tray page just
@@ -44,9 +47,27 @@ Item {
     // mutators below, which are thin routing wrappers over qs.sh.
     property var backend: null
 
+    // ------------------------------------------------ live StatusNotifier model
+    // Private plasma-workspace module; isolated in its own file so a
+    // missing module only fails this Loader.
+    Loader {
+        id: modelLoader
+        source: "TrayModelBackend.qml"
+        onStatusChanged: if (status === Loader.Error)
+            console.warn("[QuickSettings] live tray model unavailable, using qs.sh fallback")
+    }
+
+    readonly property bool usingModel: modelLoader.item !== null
+    readonly property bool modelReady: usingModel && modelLoader.item.ready
+
     // ----------------------------------------------------- availability/state
-    property bool available: false         // busctl + StatusNotifierWatcher present
-    property var sniItems: []              // [{service, path, title, icon, tooltip, isMenu}]
+    // Legacy (qs.sh) fallbacks, written by Backend.applyTrayPoll only while
+    // the live model is unavailable.
+    property bool availableLegacy: false
+    property var legacySniItems: []
+
+    readonly property bool available: usingModel ? true : availableLegacy
+    readonly property var sniItems: usingModel ? modelLoader.item.sniItems : legacySniItems
     property var backgroundApps: []        // [{appId, name, icon, message, instance}]
     property string error: ""
 
@@ -68,21 +89,18 @@ Item {
     // the stock systemtray's StatusNotifierItem.qml does for a left-click
     // without a known cursor position.
     function activateSni(service, path) {
-        root.available = true
         backend.trayActivate(service, path)
     }
 
     // Open a background app's main window.  The BackgroundMonitor D-Bus
     // service exposes OpenApp(s app_id).
     function openBackgroundApp(appId) {
-        root.available = true
         backend.trayOpenApp(appId)
     }
 
     // Stop a background app instance.  The instance ID is the flatpak PID
     // the monitor reports.
     function stopBackgroundApp(instance) {
-        root.available = true
         backend.trayStopApp(instance)
     }
 }

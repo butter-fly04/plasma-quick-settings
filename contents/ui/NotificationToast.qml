@@ -46,16 +46,14 @@ PlasmaCore.Dialog {
     // without a KWin dependency; DoesNotAcceptFocus avoids keyboard grabs.
     flags: Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint
 
-    // Rely on the count only: gating visibility on the ling geometry is a
-    // deadlock — an invisible dialog never runs layout polish, so the height
-    // gate could never open (first toast never shows).  Instead the mainItem
-    // below reserves a nonzero height so the very first show is never the
-    // "trying to show an empty dialog" refusal.
-    visible: Plasmoid.configuration.showNotificationPopups
-        && backend.notifToastCount > 0
-    onVisibleChanged: {
-        if (visible) position()
-    }
+    // Stock sets visible imperatively (onObjectAdded -> positionPopups() ->
+    // popup.visible = true) instead of a declarative binding: a binding on an
+    // invisible-at-startup dialog races the window's first expose and the
+    // very first show is swallowed (our parked "first toast missing" bug).
+    // Mirror stock: count changes considered only by imperative code below.
+    visible: false
+
+    Component.onCompleted: position()
 
     // Toast width ~ the stock popup's default (350px-ish); the height
     // follows the stacked content.
@@ -91,6 +89,39 @@ PlasmaCore.Dialog {
         id: toastContent
         width: toastDialog.toastWidth
         height: toastDialog.stackHeight
+
+        // Imperative show/hide, stock-style (Globals.qml onObjectAdded).
+        // inside the mainItem because PlasmaCore.Dialog's default property
+        // is mainItem — a direct Connection child breaks the file.
+        Connections {
+            target: toastDialog.backend
+
+            function onNotifToastCountChanged() {
+                if (Plasmoid.configuration.showNotificationPopups
+                        && toastDialog.backend.notifToastCount > 0) {
+                    Qt.callLater(function() {
+                        toastDialog.position()
+                        toastDialog.visible = true
+                    })
+                } else if (toastDialog.backend.notifToastCount === 0) {
+                    toastDialog.visible = false
+                }
+            }
+        }
+
+        // Config changed while toasts are up (toast toggle): apply at once.
+        Connections {
+            target: Plasmoid.configuration
+
+            function onShowNotificationPopupsChanged() {
+                if (!Plasmoid.configuration.showNotificationPopups) {
+                    toastDialog.visible = false
+                } else if (toastDialog.backend.notifToastCount > 0) {
+                    toastDialog.position()
+                    toastDialog.visible = true
+                }
+            }
+        }
 
         // Rows of the currently-shown notifications.  The view itself
         // never scrolls: the daemon expires rows over time, and the

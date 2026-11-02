@@ -23,6 +23,7 @@
 #   qs.sh colorscheme set <name>    switch color scheme via plasma-apply-colorscheme
 #   qs.sh airplane on|off           rfkill block/unblock all radios
 #   qs.sh traypoll                  StatusNotifier items + Background Apps as kv/lines
+#   qs.sh bgpoll                    Background Apps only (fallback poll)
 #   qs.sh trayactivate <svc> <path> call Activate(0,0) on a StatusNotifierItem
 #   qs.sh traymenu <svc> <path>     call ContextMenu(0,0) on a StatusNotifierItem
 #   qs.sh traymenulayout <svc> <path>
@@ -874,6 +875,15 @@ tray_state() {
 
     # Background apps — same D-Bus pattern, different service.
     out "bg_separator=1"
+    bg_state
+}
+
+# Background apps only.  The live StatusNotifier list comes from Plasma's
+# own model (Backend.qml / backends/TrayModelBackend.qml) and needs no
+# polling; this is the only part of the old traypoll that still has to be
+# asked for, so the QML polls it on a slow timer instead of forking the
+# full SNI walk.
+bg_state() {
     if busctl --user list 2>/dev/null | grep -q "^$BG_SVC"; then
         out "bg_available=1"
         # BackgroundApps is "aa{sv}": one dict per app with the keys
@@ -907,9 +917,12 @@ tray_state() {
 tray_activate() { # $1 = service, $2 = path
     have busctl || { out "result=error|busctl is not installed"; return; }
     [ -n "$1" ] && [ -n "$2" ] || { out "result=error|Missing service/path"; return; }
-    # Some SNIs expose Activate on org.kde.StatusNotifierItem, some on the
-    # older com.canonical.dbusmenu path; try the KDE name first.
-    busctl --user call "$1" "$2" org.kde.StatusNotifierItem Activate ii 0 0 >/dev/null 2>&1 \
+    # Some SNIs expose Activate only under the older
+    # org.freedesktop.StatusNotifierItem spelling; try the KDE name first.
+    # A failure here makes Backend.trayActivate fall back to opening the
+    # item's context menu on left click.
+    { busctl --user call "$1" "$2" org.kde.StatusNotifierItem Activate ii 0 0 >/dev/null 2>&1 \
+        || busctl --user call "$1" "$2" org.freedesktop.StatusNotifierItem Activate ii 0 0 >/dev/null 2>&1; } \
         && out "result=ok" \
         || out "result=error|Activate call failed"
 }
@@ -1093,6 +1106,9 @@ case $cmd in
         ;;
     traypoll)
         tray_state
+        ;;
+    bgpoll)
+        bg_state
         ;;
     trayactivate)
         [ -n "$arg" ] && [ -n "$3" ] || exit 2

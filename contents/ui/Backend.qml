@@ -25,11 +25,12 @@
       inputmethod  backends/InputMethodBackend.qml    org.kde.plasma.workspace.keyboardlayout
       camera       backends/CameraIndicatorBackend.qml  org.kde.pipewire.monitor
       mic          backends/MicrophoneInUseBackend.qml  org.kde.pipewire.monitor
-      tray         backends/TrayBackend.qml           (state only; D-Bus via qs.sh)
+      tray         backends/TrayBackend.qml           (live StatusNotifierModel
+                                                       + Background Apps via qs.sh)
 
     Still on ../scripts/qs.sh (to be moved to Plasma's modules next): volume,
     microphone, brightness, Wi-Fi, Night Color, Color Scheme, Airplane Mode,
-    Tray (SNI + Background Apps).
+    Background Apps.
 */
 import QtQuick
 import org.kde.plasma.plasmoid
@@ -382,6 +383,9 @@ Item {
             console.warn("[QuickSettings] tray backend could not be loaded")
     }
     readonly property bool trayAvailable: trayLoader.item ? trayLoader.item.available : false
+    // True when the live StatusNotifierModel loaded (the normal Plasma case).
+    // false only when the private module is missing and qs.sh polls instead.
+    readonly property bool trayUsingModel: trayLoader.item ? trayLoader.item.usingModel : false
     readonly property var traySniItems: trayLoader.item ? trayLoader.item.sniItems : []
     readonly property var trayBackgroundApps: trayLoader.item ? trayLoader.item.backgroundApps : []
     readonly property int trayCount: trayLoader.item ? trayLoader.item.count : 0
@@ -394,8 +398,8 @@ Item {
     // always shows the current title/icon (which can change at any time).
     // Which StatusNotifierItems get pills on the main page: every live
     // tray app when the user enables the setting, otherwise only the ones
-    // pinned from the Tray page's right-click action.  traySniItems is
-    // refreshed while the popup is open (see the traypoll timer).
+    // pinned from the Tray page's right-click action.  traySniItems comes
+    // from the live StatusNotifierModel, so pills update instantly.
     readonly property var pillSniItems: Plasmoid.configuration.showSniPills
         ? traySniItems
         : pinnedSniItems
@@ -664,29 +668,30 @@ Item {
     // markers.  See the script for the exact format.
     function applyTrayPoll(text) {
         if (!trayLoader.item) return
+        const usingModel = trayLoader.item.usingModel
         const snis = []
         const bgApps = []
-        let sawBgSeparator = false
-        let bgAvailable = false
         for (const line of text.split("\n")) {
             if (line.startsWith("tray_available=")) {
-                trayLoader.item.available = line.slice("tray_available=".length) === "1"
-            } else if (line.startsWith("bg_separator=")) {
-                sawBgSeparator = true
-            } else if (line.startsWith("bg_available=")) {
-                bgAvailable = line.slice("bg_available=".length) === "1"
+                // Never let the legacy answer override the live model: the
+                // model is authoritative while it is loaded.
+                if (!usingModel)
+                    trayLoader.item.availableLegacy =
+                        line.slice("tray_available=".length) === "1"
             } else if (line.startsWith("sni=")) {
                 // sni=<title>|<icon>|<tooltip>|<isMenu>|<service>|<path>
-                const f = splitFields(line.slice(4), 5)
-                if (f) {
-                    snis.push({
-                        title: f[0],
-                        icon: f[1],
-                        tooltip: f[2],
-                        isMenu: f[3] === "1",
-                        service: f[4],
-                        path: f[5]
-                    })
+                if (!usingModel) {
+                    const f = splitFields(line.slice(4), 5)
+                    if (f) {
+                        snis.push({
+                            title: f[0],
+                            icon: f[1],
+                            tooltip: f[2],
+                            isMenu: f[3] === "1",
+                            service: f[4],
+                            path: f[5]
+                        })
+                    }
                 }
             } else if (line.startsWith("bg_app=")) {
                 // bg_app=<app_id>|<instance>|<message>
@@ -703,27 +708,48 @@ Item {
         }
         // Only update if the signature changed, to avoid needless ListView
         // rebuilds while the popup is open (same trick as the Wi-Fi list).
-        // The icon is part of the signature: some SNIs (IBus proxy) swap
-        // their pixmap in place (input layout changes) while keeping the
-        // same service/path, and the swap must survive this check.
-        const sig = (snis.map(s => s.service + "@" + s.path + "@" + s.icon).join("\u0001"))
+        // The icon is part of the legacy signature: some SNIs (IBus proxy)
+        // swap their pixmap in place while keeping the same service/path.
+        const currentSnis = usingModel ? backend.traySniItems : snis
+        const sig = (currentSnis.map(s => s.service + "@" + s.path + "@" + s.icon).join("\u0001"))
                   + "\u0002" + (bgApps.map(a => a.appId).join("\u0001"))
         const oldSig = (backend.traySniItems.map(s => s.service + "@" + s.path + "@" + s.icon).join("\u0001"))
                   + "\u0002" + (backend.trayBackgroundApps.map(a => a.appId).join("\u0001"))
         if (sig !== oldSig) {
-            trayLoader.item.sniItems = snis
+            if (!usingModel)
+                trayLoader.item.legacySniItems = snis
             trayLoader.item.backgroundApps = bgApps
-            // Snapshot for the configuration page's per-icon hide list: the
-            // KCM pages cannot see runtime objects, only the configuration.
-            // "service|path|title" entries; write only when it changes.
-            const snapshot = snis.map(s =>
-                s.service + "|" + s.path + "|" + (s.title || "").split("\n")[0])
-            if (JSON.stringify(snapshot)
-                    !== JSON.stringify(Plasmoid.configuration.panelTrayIconList || []))
-                Plasmoid.configuration.panelTrayIconList = snapshot
         }
     }
-    function pollTray() { run("traypoll", applyTrayPoll) }
+
+    // Snapshot for the configuration page's per-icon hide list: the KCM
+    // pages cannot see runtime objects, only the configuration.
+    // "service|path|title" entries; write only when it changes.  Driven by
+    // the live model now, so it also updates when an icon changes title.
+    onTraySniItemsChanged: {
+        const snapshot = traySniItems.map(s =>
+            s.service + "|" + s.path + "|" + (s.title || "").split("\n")[0])
+        if (JSON.stringify(snapshot)
+                !== JSON.stringify(Plasmoid.configuration.panelTrayIconList || []))
+            Plasmoid.configuration.panelTrayIconList = snapshot
+    }
+    // ------------------------------------------------ tray polling (fallback)
+    // The SNI list itself is event-driven now (TrayModelBackend.qml), the
+    // same model the stock systemtray renders — no timer, no forks, updates
+    // at bus-signal speed.  Only two things still come from qs.sh:
+    //
+    //   * background apps: plasma-workspace does not export
+    //     BackgroundAppsModel to QML, and the list is only shown on the
+    //     Tray page, so a slow `qs.sh bgpoll` is enough;
+    //   * the whole SNI snapshot, but only when the private tray model
+    //     could not be loaded (non-Plasma system, renamed module).  That is
+    //     the pre-M13 polling behaviour, kept as a safety net.
+    function pollTray() {
+        if (backend.trayUsingModel)
+            run("bgpoll", applyTrayPoll)
+        else
+            run("traypoll", applyTrayPoll)
+    }
 
     Timer {
         interval: backend.popupOpen ? 1000 : 3000
@@ -757,16 +783,16 @@ Item {
         triggeredOnStart: true
         onTriggered: backend.pollColorScheme()
     }
-    // Tray (SNI list + Background Apps).  Since M12 the panel shows SNIs as
-    // its own icons, so the poll runs whenever either the panel icons are
-    // shown or the popup is open — otherwise the pixmap-style icons
-    // (IBus layout swap, Live Captions state) lag seconds behind the stock
-    // tray.  400 ms keeps the perceived latency near instant at an
-    // acceptable bus cost (a handful of property reads per tick); fall
-    // back to the slower idle rate when panel icons are off.
+    // Tray fallback poll.  The SNI list itself is pushed by the live model
+    // (zero forks), so this timer only exists for:
+    //   - background apps (Tray page, rarely changes), and
+    //   - the legacy full snapshot when the live model is unavailable.
+    // The cadence is deliberately slow when the popup is closed; opening
+    // the Tray page also triggers an immediate poll (onActivePageChanged).
     Timer {
-        interval: (backend.popupOpen || Plasmoid.configuration.showPanelTrayIcons)
-            ? 400 : 15000
+        interval: backend.popupOpen
+            ? (backend.trayUsingModel ? 5000 : 500)
+            : (backend.trayUsingModel ? 30000 : 2000)
         running: backend.popupOpen || Plasmoid.configuration.showPanelTrayIcons
         repeat: true
         triggeredOnStart: true
@@ -1169,9 +1195,19 @@ Item {
     // =========================================================== Tray (M6)
     // Forwards to qs.sh, which calls the StatusNotifierItem /
     // org.freedesktop.background.Monitor D-Bus methods directly.
-    function trayActivate(service, path) {
+    // Left click.  If the item has no working Activate action (busctl call
+    // fails — some items only implement a menu, and ItemIsMenu is not
+    // always accurate), fall back to the right-click action: open the
+    // item's menu.  `menuAnchor` is the visual anchor for that menu; pass
+    // undefined to get the old fire-and-forget behaviour.
+    function trayActivate(service, path, menuAnchor, withPin) {
         if (!service || !path) return
-        run("trayactivate " + shellQuote(service) + " " + shellQuote(path))
+        run("trayactivate " + shellQuote(service) + " " + shellQuote(path), function(txt) {
+            if (menuAnchor === undefined)
+                return
+            if (!parseResult(txt).ok)
+                backend.trayContextMenu(service, path, !!withPin, menuAnchor)
+        })
     }
 
     // The item's own DBusMenu, rendered in-process (see SniMenu.qml).
