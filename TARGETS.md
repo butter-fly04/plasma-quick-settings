@@ -15,9 +15,12 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
 - ~~Toast UI restyle: dark disc behind bell, spacing~~ — v0.12.6: full-width
   content (plain-Item mainItem with explicit sizing), boxed rows, no overlap.
 - ~~No fallback bell icon~~ — v0.12.4, verified.
-- **First toast missing after a fresh session** — parked; v0.12.7 carries the
-  stock-style imperative show fix, still needs a real-shell fresh-session test.
-  Hints in WORKLOG.md.
+- ~~First toast missing after a fresh session~~ — v0.12.8: per-notification
+  `Instantiator` + fresh `NotificationPopup` windows (stock Globals.qml architecture),
+  verified by the user in a real shell.
+- ~~Toast UI: stock popup clone~~ — v0.12.8: one borderless window per notification,
+  bottom-right, header/summary/body/actions, 2 px shrinking timeout bar, hover pause,
+  critical accent bar, left-click default action + middle-click close.
 - ~~Panel tray icons left of the applet icons~~ — done & verified.
 - ~~Panel tray icons slightly larger~~ — superseded: v0.12.5 renders them at
   exactly the unified size, artwork fills the tile, no padding/hover ring.

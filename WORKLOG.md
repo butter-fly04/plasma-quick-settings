@@ -3,9 +3,14 @@
 Live summary of the project state; kept up to date by the assistant. Targets live in `TARGETS.md`.
 Versions are git tags (`git tag -l 'v*'`), one point release per verified iteration.
 
-## Current state (after v0.12.7)
+## Current state (after v0.12.8)
 
-- **v0.12.7** (this release): the tray is now event-driven using plasma-workspace's own
+- **v0.12.8** (this release): screen toasts now use the stock architecture — one
+  `NotificationPopup` window per notification, created by an `Instantiator`, stacked
+  bottom-right with the stock 2 px timeout bar, hover pause and borderless dialog.
+  The parked "first toast missing" bug is fixed (a fresh window per row, no shared
+  pre-created dialog).
+- **v0.12.7**: the tray is now event-driven using plasma-workspace's own
   `StatusNotifierModel` (the exact model the stock systemtray renders), the panel battery
   icon shows the charging state again, and tray icons have the stock press-bounce with a
   left-click fallback to the context menu for menu-only items.
@@ -14,6 +19,32 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
   v0.12.7's event-driven model).
 - **v0.12.4**: panel tray icons moved left of the applet icons, per-icon show/hide config.
 - **v0.12.3**: history action close semantics.
+
+### Verified working (v0.12.8)
+
+- **First toast appears immediately.** `contents/ui/NotificationToast.qml` is now an
+  `Instantiator` that creates a fresh `NotificationPopup` window per popup-model row
+  (stock `global/Globals.qml` architecture). There is no shared, invisibly pre-created
+  dialog whose first show could race the window expose. Verified by the user in a real
+  shell.
+- **One popup per notification.** Each row is its own `PlasmaCore.Dialog` with
+  `type: Notification` / `CriticalNotification` (KWin notification layer on Wayland,
+  `NET::Notification` on X11), borderless, `WindowDoesNotAcceptFocus`.
+- **Bottom-right stacking.** Popups sit at the applet screen's bottom-right
+  (`Plasmoid.screenGeometry + Plasmoid.availableScreenRect`), oldest nearest the corner,
+  newer ones stacked upwards; beyond 20 % remaining screen fill only the oldest stays
+  visible (stock `popupMaximumScreenFill`).
+- **Stock timeout bar + hover pause.** The 2 px `highlightColor` bar hugs the top edge
+  and shrinks over the notification's timeout. Hovering pauses both the bar and the
+  expiry timer; leaving restarts the countdown (same as stock's timer). Critical
+  notifications use the left accent bar instead. The popup stops the model timeout on
+  creation and restarts it on destruction, like stock.
+- **Stock popup content.** App icon + application/origin in the header, relative age,
+  configure/minimize/close buttons, summary (hidden when identical to the app name, like
+  stock), rich-text body with theme link colour, notification artwork, action buttons,
+  left-click default action and middle-click close.
+- **Popups off.** With `showNotificationPopups` disabled, new rows are expired
+  immediately so they do not accumulate.
 
 ### Verified working (v0.12.7)
 
@@ -40,13 +71,9 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
 
 ### In progress / next
 
-- **First toast missing after a fresh session** — parked. v0.12.7 carries the stock-style
-  imperative show (`visible: false`, `Connections` on `notifToastCount`, `position()` then
-  `visible = true`) plus the toast toggle handler. The temporary `[QS]` probes were
-  removed; the fix still needs a real-shell fresh-session test (plasmoidviewer cannot
-  own `org.freedesktop.Notifications`).
 - Toast duplication when the stock notifications applet is also present — verify whether
-  that is still reachable / desired.
+  that is still reachable / desired. This applet assumes plasma-workspace ships without
+  `org.kde.plasma.notifications` (as on this system).
 
 ## Key learnings (keep for future iterations)
 
@@ -77,6 +104,20 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
   toasts MUST be tested in real plasmashell (user restart of the shell).
 - **PlasmaCore.Dialog** default property is `mainItem: Item` — `Connections` cannot be a
   direct child; duplicate `onXxxChanged` = "Property value set multiple times" load error.
+  `Timer`/`NumberAnimation` must live inside `mainItem`.
+- **Never add `Qt.WindowStaysOnTopHint` to a notification `PlasmaCore.Dialog`**: the
+  dialog's `applyType()` rewrites the type to `Dock` (panel role, "windows go below") for
+  any non-AppletPopup/Tooltip dialog with that flag, overriding `Notification` /
+  `CriticalNotification`. Use `flags: Qt.WindowDoesNotAcceptFocus` only (the `flags`
+  writer ORs in `FramelessWindowHint`).
+- **One window per toast**: stock uses an `Instantiator` over the popup model, not one
+  shared dialog. Instantiator's delegate gets `index`/`model` even with
+  `required property` declarations; a hidden window's `width`/`height` stay 0 until the
+  first show, so position with `popup.mainItem.width/height` as the fallback.
+- **Wayland placement needs the real shell**: `plasmoidviewer` has no plasma-shell
+  integration, so `PlasmaCore.Dialog.x/y` snap back to 0 (a plain `Window` probe does the
+  same). The position is stored and applied by `PlasmaShellWaylandIntegration` only in a
+  real plasmashell session.
 - **Missing `import org.kde.plasma.plasmoid`** breaks any file referencing `Plasmoid.*`
   (bit twice: DND switch, NotificationToast).
 - **busctl gotchas**: newline titles arrive as literal `\n` (use `first_line()`), pixmap
