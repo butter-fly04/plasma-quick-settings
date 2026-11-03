@@ -181,8 +181,8 @@ Item {
     // popupNotificationsModel (see backends/NotificationPopupBackend.qml).
     // There is no stock notifications applet on this system, so this
     // applet owns the screen toasts — NotificationToast.qml renders them.
-    // The toast model keeps rows fresh on its own (the daemon's timers
-    // expire them); the popup only reads count/model.
+    // Each popup stops the model's timeout while it is on screen and runs
+    // its own countdown (so hovering can pause it), exactly like stock.
     Loader {
         id: notifToastLoader
         source: "backends/NotificationPopupBackend.qml"
@@ -191,12 +191,17 @@ Item {
     }
     readonly property var notifToastModel: notifToastLoader.item ? notifToastLoader.item.model : null
     readonly property int notifToastCount: notifToastLoader.item ? notifToastLoader.item.count : 0
+    readonly property int notifPopupTimeout: notifToastLoader.item ? notifToastLoader.item.notifPopupTimeout : 5000
+    readonly property bool notifShowPopupTimeout: notifToastLoader.item ? notifToastLoader.item.notifShowPopupTimeout : true
 
     function notifToastClose(index) { if (notifToastLoader.item) notifToastLoader.item.close(index) }
     function notifToastExpire(index) { if (notifToastLoader.item) notifToastLoader.item.expire(index) }
+    function notifToastExpireAll() { if (notifToastLoader.item) notifToastLoader.item.expireAll() }
     function notifToastConfigure(index) { if (notifToastLoader.item) notifToastLoader.item.configure(index) }
     function notifToastInvokeDefault(index) { if (notifToastLoader.item) notifToastLoader.item.invokeDefaultAction(index) }
     function notifToastInvokeAction(index, actionName) { if (notifToastLoader.item) notifToastLoader.item.invokeAction(index, actionName) }
+    function notifToastStopTimeout(index) { if (notifToastLoader.item) notifToastLoader.item.stopTimeout(index) }
+    function notifToastStartTimeout(notificationId) { if (notifToastLoader.item) notifToastLoader.item.startTimeout(notificationId) }
 
 
     // ----------------------------------------------------- Night Color (M4)

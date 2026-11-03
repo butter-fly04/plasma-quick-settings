@@ -1,282 +1,147 @@
 /*
     SPDX-License-Identifier: GPL-2.0-or-later
 
-    Notification screen toasts (Milestone 12).
+    Screen toast manager (Milestone 12).
 
     This system ships plasma-workspace without the stock "Notifications"
     applet, so nothing shows pop-up notifications (the daemon queues them;
-    no applet owns the toast windows).  This component provides them:
+    no applet owns the toast windows).  This component provides them.
 
-      - a PlasmaCore.Dialog in the top-right screen corner (the stock
-        default corner), stacking the toast rows of the currently shown
-        notifications from Backend.notifToastModel
-      - each row has the app icon + name, summary/body, relative time,
-        the notification's action buttons, and a close button; clicking
-        the row body invokes the default action (same as the stock popup)
+    Architecture copied from the stock applet's global/Globals.qml:
+    an Instantiator creates one NotificationPopup window per row of the
+    popup model, and each window is positioned/stacked here.  A fresh
+    window per notification means the very first notification is shown by
+    the same code path as every later one (the old shared dialog was
+    created invisibly at startup and its first show could be swallowed).
 
-    The stock applet makes one window per toast and stacks them with a
-    private C++ PopupPositioner; we stack rows inside one window instead —
-    same look, no repositioning engine needed.  Rows disappear whenever
-    the model drops them: the daemon's own timeouts expire notifications
-    (showExpired:false), and any action invokes with InvokeBehavior.Close.
-
-    Toasts respect Do Not Disturb (only critical remain, per stock
-    Globals.qml urgencies logic) and the pop-up app blacklist: see
-    backends/NotificationPopupBackend.qml.
+    Popups are anchored to the bottom-right of the applet's screen (the
+    GNOME-style placement this applet already uses).  The countdown and
+    hover-pause live in NotificationPopup.qml.
 */
-import QtQuick
-import QtQuick.Layouts
-import org.kde.plasma.plasmoid
-import org.kde.plasma.core as PlasmaCore
-import org.kde.plasma.components as PlasmaComponents3
-import org.kde.kirigami as Kirigami
-import org.kde.coreaddons as KCoreAddons
 
-PlasmaCore.Dialog {
-    id: toastDialog
+import QtQuick
+import QtQml
+import org.kde.plasma.plasmoid
+import org.kde.kirigami as Kirigami
+
+Item {
+    id: root
 
     required property var backend
 
-    // Because this dialog is re-parented to nothing special, location is
-    // handled manually in position(); Floating means "arbitrary x/y, don't
-    // snap to a panel edge".
-    location: PlasmaCore.Types.Floating
-    // The stock toasts live in KWin's dedicated notification layer (always
-    // on top, never focused).  WindowStaysOnTopHint approximates that layer
-    // without a KWin dependency; DoesNotAcceptFocus avoids keyboard grabs.
-    flags: Qt.WindowDoesNotAcceptFocus | Qt.WindowStaysOnTopHint
+    // Stock's default toast width/edges (bottom-right, no horizontal centering).
+    readonly property int edgeDistance: Kirigami.Units.gridUnit * 2
+    readonly property int popupSpacing: Kirigami.Units.gridUnit
+    readonly property int popupWidth: Math.max(
+        Kirigami.Units.gridUnit * 10,
+        Math.min(Kirigami.Units.gridUnit * 18,
+                 availableRect.width - 2 * edgeDistance))
 
-    // Stock sets visible imperatively (onObjectAdded -> positionPopups() ->
-    // popup.visible = true) instead of a declarative binding: a binding on an
-    // invisible-at-startup dialog races the window's first expose and the
-    // very first show is swallowed (our parked "first toast missing" bug).
-    // Mirror stock: count changes considered only by imperative code below.
-    visible: false
-
-    Component.onCompleted: position()
-
-    // Toast width ~ the stock popup's default (350px-ish); the height
-    // follows the stacked content.
-    readonly property int toastWidth: Kirigami.Units.gridUnit * 20
-
-    function position() {
-        // Screen reflects the toast window's screen; the fallbacks keep
-        // unhosted contexts (plasmoidviewer) from collapsing x/y to 0.
-        const availW = Screen.desktopAvailableWidth || Screen.width || 1920
-        const availH = Screen.desktopAvailableHeight || Screen.height || 1080
-        x = availW - width - sideMargin
-        y = (Screen.height - availH) + sideMargin
+    // Plasmoid.availableScreenRect is relative to the screen; add the
+    // screen origin to get global window coordinates.
+    readonly property rect availableRect: {
+        const screen = Plasmoid.screenGeometry
+        const available = Plasmoid.availableScreenRect
+        if (screen && screen.width > 0 && available && available.width > 0) {
+            return Qt.rect(screen.x + available.x, screen.y + available.y,
+                           available.width, available.height)
+        }
+        // plasmoidviewer / no containment: approximate with the primary screen.
+        const w = Screen.desktopAvailableWidth || Screen.width || 1920
+        const h = Screen.desktopAvailableHeight || Screen.height || 1080
+        return Qt.rect(0, 0, w, h)
     }
-    onWidthChanged: if (visible) position()
-    onHeightChanged: if (visible) position()
+    onAvailableRectChanged: Qt.callLater(applyPositions)
 
-    readonly property int sideMargin: Kirigami.Units.gridUnit / 2
+    readonly property bool popupsEnabled: Plasmoid.configuration.showNotificationPopups
 
-    // Reserved minimum height for the stack: nonzero whenever the toast
-    // becomes visible, so the dialog never refuses the first show; the
-    // layout then grows/shrinks it with the stacked rows.
-    readonly property real stackHeight:
-        Math.max(Kirigami.Units.gridUnit * 3, notifList.contentHeight
-            + 2 * Kirigami.Units.smallSpacing)
+    function applyPositions() {
+        const rect = availableRect
+        if (rect.width <= 0 || rect.height <= 0) {
+            return
+        }
 
-    // Main item is a plain (non-Layout) Item with explicit size: PlasmaCore.Dialog
-    // sizes its window from the mainItem's width/height — layouts keep
-    // overriding their own explicit width during implicit-size settling and
-    // then the window ends up wider/narrower than the content (the user's
-    // report: text/labels not filling the popup horizontally, floating
-    // labels overlapping the app icon).
-    mainItem: Item {
-        id: toastContent
-        width: toastDialog.toastWidth
-        height: toastDialog.stackHeight
+        // Iterate in model order: the first (oldest) row sits closest to the
+        // bottom-right corner and newer popups stack upwards, like stock.
+        let y = rect.y + rect.height - edgeDistance
+        const maxTop = rect.y + rect.height * 0.2
 
-        // Imperative show/hide, stock-style (Globals.qml onObjectAdded).
-        // inside the mainItem because PlasmaCore.Dialog's default property
-        // is mainItem — a direct Connection child breaks the file.
-        Connections {
-            target: toastDialog.backend
+        for (let i = 0; i < toastInstantiator.count; ++i) {
+            const popup = toastInstantiator.objectAt(i)
+            if (!popup) {
+                continue
+            }
 
-            function onNotifToastCountChanged() {
-                if (Plasmoid.configuration.showNotificationPopups
-                        && toastDialog.backend.notifToastCount > 0) {
-                    Qt.callLater(function() {
-                        toastDialog.position()
-                        toastDialog.visible = true
-                    })
-                } else if (toastDialog.backend.notifToastCount === 0) {
-                    toastDialog.visible = false
-                }
+            // Before the first show the window is still hidden and Qt keeps
+            // its size at 0; the main item already has the final size, so use
+            // that for the first placement.
+            const width = popup.width > 0
+                ? popup.width
+                : (popup.mainItem ? popup.mainItem.width : popupWidth)
+            const height = popup.height > 0
+                ? popup.height
+                : (popup.mainItem ? popup.mainItem.height : 0)
+
+            popup.x = Math.round(rect.x + rect.width - edgeDistance - width)
+            popup.y = Math.round(y - height)
+            y -= height + popupSpacing
+
+            // Don't let a flood of notifications fill the whole screen.
+            // The oldest (first) one is always visible.
+            popup.visible = popupsEnabled
+                && width > 0 && height > 0
+                && (i === 0 || popup.y > maxTop)
+        }
+    }
+
+    Instantiator {
+        id: toastInstantiator
+        model: root.backend ? root.backend.notifToastModel : null
+
+        delegate: NotificationPopup {
+            backend: root.backend
+            popupWidth: root.popupWidth
+            onHeightChanged: Qt.callLater(root.applyPositions)
+            onWidthChanged: Qt.callLater(root.applyPositions)
+        }
+
+        onObjectAdded: (index, object) => {
+            object.visible = false
+            root.applyPositions()
+            if (root.popupsEnabled) {
+                // Re-run after the window has its platform size; this is the
+                // stock "position, then show" order.
+                Qt.callLater(function() {
+                    root.applyPositions()
+                })
+            } else if (root.backend) {
+                // Don't keep hidden rows around (and don't destroy the
+                // popup from inside Instantiator's objectAdded signal).
+                Qt.callLater(function() {
+                    if (root.backend) {
+                        root.backend.notifToastExpireAll()
+                    }
+                })
             }
         }
 
-        // Config changed while toasts are up (toast toggle): apply at once.
-        Connections {
-            target: Plasmoid.configuration
-
-            function onShowNotificationPopupsChanged() {
-                if (!Plasmoid.configuration.showNotificationPopups) {
-                    toastDialog.visible = false
-                } else if (toastDialog.backend.notifToastCount > 0) {
-                    toastDialog.position()
-                    toastDialog.visible = true
-                }
-            }
+        onObjectRemoved: (index, object) => {
+            Qt.callLater(root.applyPositions)
         }
+    }
 
-        // Rows of the currently-shown notifications.  The view itself
-        // never scrolls: the daemon expires rows over time, and the
-        // popup limit (12) keeps the stack bounded.  Height follows the
-        // content so the dialog window sizes to the stack.
-        ListView {
-            id: notifList
-            anchors.fill: parent
-            anchors.margins: Kirigami.Units.smallSpacing
-            interactive: false
-            clip: true
-            spacing: Kirigami.Units.smallSpacing
-            model: toastDialog.backend.notifToastModel
+    Connections {
+        target: Plasmoid.configuration
 
-            delegate: Rectangle {
-                id: toastRow
-
-                required property int index
-                required property var model
-
-                // True when no app-provided icon exists and the symbolic
-                // bell fallback is used (needs isMask coloring).
-                readonly property bool isFallbackIcon:
-                    !(model.iconName ?? "") && !(model.applicationIconName ?? "")
-
-                width: notifList.width
-                height: rowLayout.implicitHeight
-                    + 2 * Kirigami.Units.smallSpacing
-                radius: Kirigami.Units.cornerRadius
-
-                // Each notification is its own boxed card: a subtle fill
-                // slightly lighter than the dialog background; hover
-                // brightens it.
-                color: toastRowArea.containsMouse
-                    ? Qt.alpha(Kirigami.Theme.highlightColor, 0.35)
-                    : Qt.alpha(Kirigami.Theme.backgroundColor, 0.6)
-                border.width: 1
-                border.color: Qt.alpha(Kirigami.Theme.textColor, 0.10)
-
-                MouseArea {
-                    id: toastRowArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: toastRow.model.hasDefaultAction
-                        ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        if (toastRow.model.hasDefaultAction)
-                            toastDialog.backend.notifToastInvokeDefault(toastRow.index)
+        function onShowNotificationPopupsChanged() {
+            if (!root.popupsEnabled && root.backend) {
+                Qt.callLater(function() {
+                    if (root.backend) {
+                        root.backend.notifToastExpireAll()
                     }
-                }
-
-                RowLayout {
-                    id: rowLayout
-                    x: Kirigami.Units.smallSpacing
-                    y: Kirigami.Units.smallSpacing
-                    width: toastRow.width - 2 * Kirigami.Units.smallSpacing
-                    spacing: Kirigami.Units.largeSpacing
-
-                    // Notification icon: the notification's own image/icon
-                    // or the app icon; NO icon at all when neither provides
-                    // one (the default bell artwork reads badly).
-                    Kirigami.Icon {
-                        visible: !toastRow.isFallbackIcon
-                        source: (toastRow.model.iconName ?? "")
-                            || (toastRow.model.applicationIconName ?? "")
-                        Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
-                        Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
-                        Layout.alignment: Qt.AlignTop
-                    }
-
-                    ColumnLayout {
-                        spacing: Kirigami.Units.smallSpacing / 2
-                        Layout.fillWidth: true
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-
-                            // App name + relative time on top — same two
-                            // lines the stock popup shows.  The app name
-                            // stretches, so time + close sit at the
-                            // card's right edge.
-                            PlasmaComponents3.Label {
-                                text: toastRow.model.applicationName ?? ""
-                                font.bold: true
-                                font.pointSize: Kirigami.Theme.smallFont.pointSize
-                                opacity: 0.85
-                                elide: Text.ElideRight
-                                Layout.fillWidth: true
-                            }
-                            PlasmaComponents3.Label {
-                                text: {
-                                    const created = toastRow.model.created
-                                    if (!created) return ""
-                                    try {
-                                        return KCoreAddons.Format.formatRelativeDateTime(created, Locale.ShortFormat)
-                                    } catch (e) { return "" }
-                                }
-                                opacity: 0.6
-                                font.pointSize: Kirigami.Theme.smallFont.pointSize
-                            }
-                            // Explicit close (the X). _visible always: any
-                            // notification can be closed.
-                            PlasmaComponents3.ToolButton {
-                                icon.name: "window-close"
-                                PlasmaComponents3.ToolTip.text: i18n("Close notification")
-                                PlasmaComponents3.ToolTip.visible: hovered
-                                onClicked: toastDialog.backend.notifToastClose(toastRow.index)
-                            }
-                        }
-
-                        PlasmaComponents3.Label {
-                            visible: (toastRow.model.display ?? "").length > 0
-                            text: toastRow.model.display ?? ""
-                            font.bold: true
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-                        PlasmaComponents3.Label {
-                            visible: (toastRow.model.body ?? "").length > 0
-                            text: toastRow.model.body ?? ""
-                            opacity: 0.85
-                            elide: Text.ElideRight
-                            wrapMode: Text.Wrap
-                            maximumLineCount: 6
-                            Layout.fillWidth: true
-                        }
-
-                        // Notification action buttons (replies/accept/reject),
-                        // styled like the stock popup's footer buttons.
-                        RowLayout {
-                            visible: (toastRow.model.actionLabels ?? []).length > 0
-                            spacing: Kirigami.Units.smallSpacing
-                            Layout.fillWidth: true
-                            Layout.topMargin: Kirigami.Units.smallSpacing / 2
-
-                            Repeater {
-                                model: toastRow.model.actionLabels ?? []
-                                delegate: PlasmaComponents3.Button {
-                                    required property string modelData
-                                    required property int index
-                                    text: modelData
-                                    onClicked: {
-                                        const names = toastRow.model.actionNames ?? []
-                                        if (index < names.length) {
-                                            toastDialog.backend.notifToastInvokeAction(
-                                                toastRow.index, names[index])
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                })
             }
+            Qt.callLater(root.applyPositions)
         }
     }
 }
