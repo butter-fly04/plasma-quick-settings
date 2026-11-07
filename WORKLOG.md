@@ -3,9 +3,15 @@
 Live summary of the project state; kept up to date by the assistant. Targets live in `TARGETS.md`.
 Versions are git tags (`git tag -l 'v*'`), one point release per verified iteration.
 
-## Current state (after v0.12.8)
+## Current state (after v0.12.9)
 
-- **v0.12.8** (this release): screen toasts now use the stock architecture — one
+- **v0.12.9** (this release): the stock keyboard-layout applet is available as a panel
+  icon and as a pill in the popup, both individually configurable and using the stock
+  `KeyboardLayout` module, display styles, flags and wheel switching.  Clicking either
+  place opens the layout list as a reliable native menu (right-click too on the panel
+  icon), with the current layout checked.  Panel hover feeds the layout's long name into
+  the single applet-level tooltip.
+- **v0.12.8**: screen toasts now use the stock architecture — one
   `NotificationPopup` window per notification, created by an `Instantiator`, stacked
   bottom-right with the stock 2 px timeout bar, hover pause and borderless dialog.
   The parked "first toast missing" bug is fixed (a fresh window per row, no shared
@@ -19,6 +25,31 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
   v0.12.7's event-driven model).
 - **v0.12.4**: panel tray icons moved left of the applet icons, per-icon show/hide config.
 - **v0.12.3**: history action close semantics.
+
+### Verified working (v0.12.9)
+
+- **Same engine as the stock applet.** `contents/ui/KeyboardLayoutIndicator.qml`
+  instantiates `org.kde.plasma.workspace.keyboardlayout.KeyboardLayout` directly, uses
+  `KCMKeyboard.Flags.getIcon()` for the artwork and `WorkspaceComponents.BadgeOverlay`
+  for display style 2. No layout logic is re-implemented.
+- **Panel icon and popup pill.** `CompactRepresentation.qml` renders a bare square icon
+  at the same size as the other panel glyphs; `FullRepresentation.qml` renders a rounded
+  pill next to the battery pill. Each placement has its own show/hide setting, and the
+  display style is shared.
+- **Stock face and wheel.** Display styles 0/1/2 match the stock applet (name, flag,
+  flag with name badge). The wheel uses the stock accumulator logic to switch to the
+  previous/next layout.
+- **Native layout menu.** Clicking the panel icon (left or right) or the pill opens
+  `PlasmaExtras.Menu` — a native `QMenuProxy`, like the tray menus in `SniMenu.qml`,
+  rather than a QQC2 menu that the panel/popup would paint over. It lists every layout
+  with its flag and long name, checks the current one, switches on selection, opens on
+  the screen-facing side of the panel, and closes on any outside click.
+- **One tooltip in the panel.** The panel indicator has no tooltip of its own; hovering
+  sets `Backend.panelHoverKeyboardLayout`, so the shell-positioned applet tooltip shows
+  the layout long name instead of the Quick Settings summary. The popup pill keeps its
+  own tooltip because there is no applet tooltip there.
+- **Configuration.** New "Keyboard Layout" tab: show in panel, show in popup, display
+  style. Defaults are on/on/0.
 
 ### Verified working (v0.12.8)
 

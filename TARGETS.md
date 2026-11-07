@@ -44,6 +44,18 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
 - ~~Retire the tray watch daemon~~ — v0.12.7: daemon + `file://` XHR ladder
   removed; background apps use `qs.sh bgpoll` (5 s popup / 30 s idle).
 
+## M12.4 keyboard layout (user request, Nov 3)
+
+- ~~Keyboard layout as a popup pill and a separate panel icon, individually
+  configurable, reusing the stock applet's `KeyboardLayout` module and display
+  styles~~ — v0.12.9.
+- ~~Clicking opens the layout list; the wheel switches layouts~~ — v0.12.9.
+- ~~Panel icon behaves like a tray entry: one layout-name tooltip, both left and
+  right click open the layout list~~ — v0.12.9.
+- ~~Native layout menu: full height, stacks above the panel/popup, closes when
+  clicking outside it~~ — v0.12.9 (native `PlasmaExtras.Menu`, same mechanism as
+  the tray menus).
+
 ## Explicit user workflow rules
 
 - Commit + tag a point release for every verified iteration; never skip versions.
