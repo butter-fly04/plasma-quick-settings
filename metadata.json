@@ -13,7 +13,7 @@
         "Id": "org.community.quicksettings",
         "License": "GPL-2.0-or-later",
         "Name": "Quick Settings",
-        "Version": "0.12.8",
+        "Version": "0.12.9",
         "Website": ""
     },
     "X-Plasma-API-Minimum-Version": "6.0"

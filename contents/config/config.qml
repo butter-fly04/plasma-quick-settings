@@ -1,11 +1,13 @@
 /*
     SPDX-License-Identifier: GPL-2.0-or-later
 
-    Configuration page for Quick Settings.  Three tabs:
+    Configuration page for Quick Settings.  Four tabs:
       1. Panel icons — what to show in the panel (CompactRepresentation).
       2. Popup contents — which sliders, tiles, and buttons to show in
          the popup (FullRepresentation), plus the SNI pill picker.
-      3. Screenshot — which backend to use, and the default mode.
+      3. Keyboard Layout — panel/popup visibility and display style for
+         the stock keyboard-layout indicator.
+      4. Screenshot — which backend to use, and the default mode.
 
     Pattern copied from plasma-workspace's systemmonitor config.qml.
     NOTE: ConfigCategory must be qualified with the PlasmaConfig namespace
@@ -26,6 +28,11 @@ PlasmaConfig.ConfigModel {
         name: i18n("Popup Contents")
         icon: "preferences-desktop-notification"
         source: "configPopup.qml"
+    }
+    PlasmaConfig.ConfigCategory {
+        name: i18n("Keyboard Layout")
+        icon: "input-keyboard"
+        source: "configKeyboardLayout.qml"
     }
     PlasmaConfig.ConfigCategory {
         name: i18n("Screenshot")

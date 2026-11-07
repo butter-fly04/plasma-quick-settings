@@ -163,6 +163,36 @@ MouseArea {
             }
         }
 
+        // Keyboard layout, rendered like a separate system-tray icon: the
+        // stock keyboard-layout applet's flag/name face, clickable to pick a
+        // layout and scrollable to switch.  Config: Keyboard Layout tab.
+        KeyboardLayoutIndicator {
+            id: panelKeyboardLayout
+            visible: Plasmoid.configuration.showKeyboardLayoutPanel
+                && panelKeyboardLayout.hasLayouts
+            displayStyle: Plasmoid.configuration.keyboardLayoutDisplayStyle
+            iconSize: compact.iconSize
+
+            // Only one tooltip: while hovered, the applet-level tooltip (which
+            // the panel positions above it) shows the full layout name instead
+            // of the Quick Settings summary.  The indicator's own tooltip is
+            // pill-only for that reason.
+            onHoveredChanged: compact.backend.setPanelKeyboardLayoutHover(
+                hovered ? layoutNames.longName : "")
+            onLayoutNamesChanged: {
+                if (hovered)
+                    compact.backend.setPanelKeyboardLayoutHover(layoutNames.longName)
+            }
+            onVisibleChanged: {
+                if (!visible)
+                    compact.backend.setPanelKeyboardLayoutHover("")
+            }
+            Component.onDestruction: {
+                if (compact.backend)
+                    compact.backend.setPanelKeyboardLayoutHover("")
+            }
+        }
+
         // Small visual gap between the tray icon cluster and the
         // applet's own unified icons (the grid already separated them,
         // so this is just the little bit more the user asked for).

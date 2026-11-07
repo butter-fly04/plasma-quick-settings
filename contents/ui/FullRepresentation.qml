@@ -146,6 +146,18 @@ Item {
                 }
             }
 
+            // Keyboard layout pill: the stock keyboard-layout applet's
+            // face (flag / layout name / badge) in a QuickTile-style pill.
+            // Clicking opens the layout list, the wheel switches layouts.
+            KeyboardLayoutIndicator {
+                id: keyboardLayoutPill
+                visible: Plasmoid.configuration.showKeyboardLayoutPill
+                    && keyboardLayoutPill.hasLayouts
+                displayStyle: Plasmoid.configuration.keyboardLayoutDisplayStyle
+                pill: true
+                iconSize: Kirigami.Units.iconSizes.medium
+            }
+
             Item { Layout.fillWidth: true }
 
             // Screenshot button — left-click uses the configured default

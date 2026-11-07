@@ -56,6 +56,15 @@ Item {
         panelHoverSni = ""
         panelHoverSniTooltip = ""
     }
+
+    // Panel keyboard-layout hover: while the mouse is over the layout
+    // indicator, the applet's (shell-positioned) tooltip shows the layout's
+    // full name instead of the Quick Settings summary.  Using the applet
+    // tooltip keeps this to one tooltip, exactly like the tray icons above.
+    property string panelHoverKeyboardLayout: ""
+    function setPanelKeyboardLayoutHover(name) {
+        panelHoverKeyboardLayout = name || ""
+    }
     property string activePage: "main"      // "main", "wifi", "bluetooth", "power", ...
     property bool listsPaused: false        // true while the user types a password
 

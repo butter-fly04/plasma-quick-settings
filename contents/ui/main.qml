@@ -13,12 +13,20 @@ PlasmoidItem {
 
     // While the mouse is over one of the per-app tray icons the applet
     // tooltip takes the tray icon's title/tooltip (shell-positioned above
-    // the panel instead of a per-icon popup window).
+    // the panel instead of a per-icon popup window).  The same applies to
+    // the keyboard-layout indicator, where it shows the layout's full name.
     readonly property bool hoverTrayIcon: qsBackend.panelHoverSni !== ""
+    readonly property bool hoverKeyboardLayout: qsBackend.panelHoverKeyboardLayout !== ""
     toolTipMainText: hoverTrayIcon
-        ? qsBackend.panelHoverSni : i18n("Quick Settings")
+        ? qsBackend.panelHoverSni
+        : hoverKeyboardLayout
+            ? qsBackend.panelHoverKeyboardLayout
+            : i18n("Quick Settings")
     toolTipSubText: hoverTrayIcon
-        ? qsBackend.panelHoverSniTooltip : qsBackend.summary
+        ? qsBackend.panelHoverSniTooltip
+        : hoverKeyboardLayout
+            ? ""
+            : qsBackend.summary
 
     Backend {
         id: qsBackend

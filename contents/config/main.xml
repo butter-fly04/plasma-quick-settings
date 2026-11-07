@@ -144,6 +144,21 @@
             <default>true</default>
         </entry>
 
+        <!-- Keyboard layout — the stock keyboard-layout applet's face,
+             available both as a panel icon and as a popup pill. -->
+        <entry name="showKeyboardLayoutPanel" type="Bool">
+            <label>Show the keyboard layout in the panel.</label>
+            <default>true</default>
+        </entry>
+        <entry name="showKeyboardLayoutPill" type="Bool">
+            <label>Show the keyboard layout as a pill in the quick settings popup.</label>
+            <default>true</default>
+        </entry>
+        <entry name="keyboardLayoutDisplayStyle" type="Int">
+            <label>Keyboard layout display style: 0 = layout name, 1 = flag, 2 = flag with layout name badge (the stock keyboard-layout applet's display styles).</label>
+            <default>0</default>
+        </entry>
+
         <!-- Screenshot backend preference -->
         <entry name="showNotificationPopups" type="Bool">
             <label>Show screen pop-up notifications when they arrive (there is no stock notifications applet on this system, so this applet owns the toasts).</label>
