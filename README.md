@@ -57,8 +57,9 @@ containing `metadata.json` and `contents/`. Choose one of these two methods.
 
 ### Method 1 — use the ready-made `.plasmoid` (easiest)
 
-1. Download **[dist/quicksettings-v0.12.9.plasmoid](dist/quicksettings-v0.12.9.plasmoid)**
-   (on GitHub, use the download button on that page).
+1. Download `quicksettings-v0.12.9.plasmoid` from the
+   **[v0.12.9 release](https://github.com/butter-fly04/plasma-quick-settings/releases/tag/v0.12.9)**
+   or from **[dist/quicksettings-v0.12.9.plasmoid](dist/quicksettings-v0.12.9.plasmoid)**.
 2. Right-click the desktop or panel → **Enter Edit Mode** → **Add Widgets** →
    **Get New Widgets** → **Install Widget From Local File…**, and select the
    `.plasmoid` file.
