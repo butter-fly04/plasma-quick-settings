@@ -1,4 +1,4 @@
 plasma-unified-quicksettings/
-github/
 *.plasmoid
 *.zip
+!dist/*.plasmoid
