@@ -119,21 +119,6 @@ are split into four tabs:
 
 The popup is resizable: drag its edges away from the panel, and the tile grid reflows.
 
-## Keyboard layout
-
-The indicator is a thin wrapper around the exact components the stock Plasma keyboard
-layout applet uses:
-
-- `org.kde.plasma.workspace.keyboardlayout.KeyboardLayout` for state and switching;
-- `KCMKeyboard.Flags.getIcon()` for flag artwork;
-- `WorkspaceComponents.BadgeOverlay` for the "flag with name" display style;
-- the stock wheel accumulator for previous/next layout.
-
-Clicking the panel icon (left or right) or the popup pill opens a native Plasma menu
-(`PlasmaExtras.Menu`) listing every layout with its flag and long name, with the current
-one checked. The menu is docked on the screen-facing side of the panel and closes when
-you click anywhere outside it. In the panel, hovering shows the layout's full name in the
-single shell-positioned widget tooltip.
 
 ## Repository layout
 
@@ -169,8 +154,7 @@ changes.
 
 ## License
 
-This project is licensed under the **GNU General Public License, version 2 or (at your
-option) any later version** — `GPL-2.0-or-later`. See [LICENSE](LICENSE).
+This project is licensed under the **GNU General Public License, version 2 ** — `GPL-2.0-or-later`. See [LICENSE](LICENSE).
 
 It reuses and adapts components and reference implementations from KDE Plasma
 (`plasma-workspace`, `plasma-desktop`) and from
