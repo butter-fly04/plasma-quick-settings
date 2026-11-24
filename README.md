@@ -157,7 +157,7 @@ changes.
 ## License
 
 This project is licensed under the **GNU General Public License, version 2 or (at your
-option) any later version** — `GPL-2.0-or-later`. See [LICENSE](LICENSE).
+option) any later version** (SPDX: `GPL-2.0-or-later`). See [LICENSE](LICENSE).
 
 It reuses and adapts components and reference implementations from KDE Plasma
 (`plasma-workspace`, `plasma-desktop`) and from
