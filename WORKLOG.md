@@ -3,9 +3,12 @@
 Live summary of the project state; kept up to date by the assistant. Targets live in `TARGETS.md`.
 Versions are git tags (`git tag -l 'v*'`), one point release per verified iteration.
 
-## Current state (after v0.13.0)
+## Current state (after v0.13.1)
 
-- **v0.13.0** (this release): notification toasts and history rows now render the stock
+- **v0.13.1** (this release): the job speed graph now starts expanded in file-transfer
+  toasts and history rows, so no click is needed to see it; the stock Details button is
+  still present and can collapse it again. All other job controls are unchanged.
+- **v0.13.0**: notification toasts and history rows now render the stock
   notifications applet's job footer for file transfers — progress bar/percentage,
   expandable Details with the speed graph, Pause/Resume, Cancel and
   Open/Open Containing Folder — copied from plasma-workspace and adapted to the public
@@ -33,6 +36,12 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
   v0.12.7's event-driven model).
 - **v0.12.4**: panel tray icons moved left of the applet icons, per-icon show/hide config.
 - **v0.12.3**: history action close semantics.
+
+### Verified working (v0.13.1)
+
+- The stock Details toggle starts checked, so the speed graph is expanded by default in
+  job toasts and history rows. The Details button still collapses/expands it, and the
+  Pause/Resume, Cancel and Open controls are unchanged.
 
 ### Verified working (v0.13.0)
 

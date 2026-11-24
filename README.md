@@ -59,9 +59,9 @@ containing `metadata.json` and `contents/`. Choose one of these two methods.
 
 ### Method 1 — use the ready-made `.plasmoid` (easiest)
 
-1. Download `quicksettings-v0.13.0.plasmoid` from the
-   **[v0.13.0 release](https://github.com/butter-fly04/plasma-quick-settings/releases/tag/v0.13.0)**
-   or from **[dist/quicksettings-v0.13.0.plasmoid](dist/quicksettings-v0.13.0.plasmoid)**.
+1. Download `quicksettings-v0.13.1.plasmoid` from the
+   **[v0.13.1 release](https://github.com/butter-fly04/plasma-quick-settings/releases/tag/v0.13.1)**
+   or from **[dist/quicksettings-v0.13.1.plasmoid](dist/quicksettings-v0.13.1.plasmoid)**.
 2. Right-click the desktop or panel → **Enter Edit Mode** → **Add Widgets** →
    **Get New Widgets** → **Install Widget From Local File…**, and select the
    `.plasmoid` file.
@@ -146,7 +146,7 @@ The applet is plain QML on top of Plasma 6 modules; there is no build step.
   Real panel behaviour (tooltips, popup stacking, notification ownership) must be tested
   in a running plasmashell.
 - The downloadable `.plasmoid` is just a zip of `metadata.json` and `contents/`; rebuild
-  it with `zip -qr dist/quicksettings-v0.13.0.plasmoid metadata.json contents` after
+  it with `zip -qr dist/quicksettings-v0.13.1.plasmoid metadata.json contents` after
   changes if you want to publish an updated package.
 - Releases are tagged `vX.Y.Z`; see `WORKLOG.md` for the change history and
   `TARGETS.md` for the feature status.

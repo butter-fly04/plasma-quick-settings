@@ -92,6 +92,9 @@ ColumnLayout {
             icon.name: checked ? "collapse-symbolic" : "expand-symbolic"
             text: i18nc("Hides/expands item details", "Details")
             checkable: jobItem.jobDetails && jobItem.jobDetails.hasDetails
+            // Show the speed graph expanded from the start; the button can
+            // still collapse it.
+            checked: true
             visible: checkable
 
             Accessible.onPressAction: if (checkable) toggle()

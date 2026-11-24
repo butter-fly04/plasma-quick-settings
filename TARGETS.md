@@ -63,6 +63,8 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
   v0.13.0, verified in the real shell.
 - ~~Fix notification toast tooltips being clipped at the top edge~~ — v0.13.0:
   real `ToolTip` children open below the header buttons.
+- ~~Show the job speed graph expanded by default instead of requiring a Details
+  click~~ — v0.13.1; the Details button still collapses it.
 
 ## Explicit user workflow rules
 
