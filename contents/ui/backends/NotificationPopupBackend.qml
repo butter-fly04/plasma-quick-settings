@@ -19,7 +19,8 @@
         unless criticalPopupsInDoNotDisturbMode allows them; plus the DND
         pop-up whitelists when inhibited
       - sortMode SortByTypeAndUrgency / Ascending, groupMode Off
-      - jobs are OFF in toasts (stock shows job progress bars; skipped here)
+      - job rows follow the same "Show job progress in notifications"
+        setting the stock applet uses (Settings.jobsInNotifications)
 
     Like stock, each popup calls stopTimeout() on creation and owns the
     timeout itself (so hovering pauses its countdown bar), then calls
@@ -59,10 +60,9 @@ Item {
             ? notificationSettings.doNotDisturbPopupWhitelistedApplications : []
         whitelistedNotifyRcNames: root.inhibited
             ? notificationSettings.doNotDisturbPopupWhitelistedServices : []
-        // Job progress bars (download/copy dialogs) are handled by the
-        // stock applet; without it there is no job widget, so leave them in
-        // the history only.
-        showJobs: false
+        // File-transfer/copy jobs (the stock applet's progress bars and
+        // speed graph) are rendered by NotificationJobItem.
+        showJobs: notificationSettings.jobsInNotifications
         sortMode: NotificationManager.Notifications.SortByTypeAndUrgency
         sortOrder: Qt.AscendingOrder
         groupMode: NotificationManager.Notifications.GroupDisabled
@@ -88,6 +88,10 @@ Item {
     // System Settings).  NotificationPopup uses these for its countdown bar.
     readonly property int notifPopupTimeout: notificationSettings.popupTimeout
     readonly property bool notifShowPopupTimeout: notificationSettings.showPopupTimeout
+    // Stock: running job popups can either stay until the job finishes or
+    // auto-dismiss after the normal popup timeout (then they remain in the
+    // history).  NotificationPopup uses this to choose its countdown mode.
+    readonly property bool notifPermanentJobPopups: notificationSettings.permanentJobPopups
 
     // Stock popups stop the model timeout while they are on screen and let
     // their own timer handle expiry (so hovering can pause it).
@@ -127,5 +131,25 @@ Item {
     function invokeAction(index, actionName) {
         popupModel.invokeAction(popupModel.index(index, 0), actionName,
             NotificationManager.Notifications.Close)
+    }
+
+    // Job controls (same model API the stock applet's JobItem uses).
+    function suspendJob(index) {
+        const idx = popupModel.index(index, 0)
+        if (idx.valid) {
+            popupModel.suspendJob(idx)
+        }
+    }
+    function resumeJob(index) {
+        const idx = popupModel.index(index, 0)
+        if (idx.valid) {
+            popupModel.resumeJob(idx)
+        }
+    }
+    function killJob(index) {
+        const idx = popupModel.index(index, 0)
+        if (idx.valid) {
+            popupModel.killJob(idx)
+        }
     }
 }

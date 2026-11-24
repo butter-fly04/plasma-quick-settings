@@ -39,6 +39,20 @@ PlasmaCore.Dialog {
     readonly property var actionNames: model.actionNames ?? []
     readonly property var notificationId: model.notificationId
 
+    // Job notifications (file copies, downloads, …) carry their live progress
+    // in these roles.  NotificationJobItem renders them with the stock job UI.
+    readonly property int notificationType:
+        model.type ?? NotificationManager.Notifications.NotificationType
+    readonly property bool isJob:
+        notificationType === NotificationManager.Notifications.JobType
+    readonly property int jobState:
+        model.jobState ?? NotificationManager.Notifications.JobStateStopped
+    readonly property bool isRunningJob:
+        isJob && jobState !== NotificationManager.Notifications.JobStateStopped
+    readonly property var jobDetails: model.jobDetails ?? null
+    readonly property bool permanentJobPopups:
+        backend ? backend.notifPermanentJobPopups : true
+
     // Stock: a notification's own timeout wins; -1 means "use the configured
     // default", 0 means "never expire".  Notifications carrying URLs get a
     // longer default so the user can drag them out.
@@ -46,6 +60,12 @@ PlasmaCore.Dialog {
         (backend ? backend.notifPopupTimeout : 5000)
         + (urls.length > 0 ? 5000 : 0)
     readonly property int effectiveTimeout: {
+        // Stock: a running job either stays until it finishes (permanent job
+        // popups) or dismisses itself after the normal popup timeout and
+        // remains in the history.
+        if (isRunningJob && !permanentJobPopups) {
+            return defaultTimeout
+        }
         const timeout = model.timeout
         if (timeout === undefined || timeout === null || timeout === -1) {
             return defaultTimeout
@@ -187,33 +207,51 @@ PlasmaCore.Dialog {
                 }
 
                 PlasmaComponents3.ToolButton {
+                    id: configureButton
                     visible: popup.model.configurable ?? false
                     icon.name: "configure"
                     text: popup.model.configureActionLabel || i18n("Configure")
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     onClicked: popup.backend.notifToastConfigure(popup.index)
-                    PlasmaComponents3.ToolTip.text: text
-                    PlasmaComponents3.ToolTip.visible: hovered
+
+                    // The toast window is only as tall as its content, so a
+                    // tooltip above the header is clipped by the top edge.
+                    // Use a real ToolTip child and open it below the button.
+                    PlasmaComponents3.ToolTip {
+                        text: configureButton.text
+                        visible: configureButton.hovered
+                        y: parent.height + 4
+                    }
                 }
 
                 PlasmaComponents3.ToolButton {
+                    id: dismissButton
                     visible: popup.model.dismissable ?? false
                     icon.name: "window-minimize"
                     text: i18n("Minimize")
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     onClicked: popup.model.dismissed = true
-                    PlasmaComponents3.ToolTip.text: text
-                    PlasmaComponents3.ToolTip.visible: hovered
+
+                    PlasmaComponents3.ToolTip {
+                        text: dismissButton.text
+                        visible: dismissButton.hovered
+                        y: parent.height + 4
+                    }
                 }
 
                 PlasmaComponents3.ToolButton {
+                    id: closeButton
                     visible: popup.model.closable ?? false
                     icon.name: "window-close"
                     text: i18n("Close")
                     display: PlasmaComponents3.AbstractButton.IconOnly
                     onClicked: popup.backend.notifToastClose(popup.index)
-                    PlasmaComponents3.ToolTip.text: text
-                    PlasmaComponents3.ToolTip.visible: hovered
+
+                    PlasmaComponents3.ToolTip {
+                        text: closeButton.text
+                        visible: closeButton.hovered
+                        y: parent.height + 4
+                    }
                 }
             }
 
@@ -277,7 +315,9 @@ PlasmaCore.Dialog {
                         Layout.fillWidth: true
                         Layout.topMargin: Kirigami.Units.smallSpacing / 2
                         spacing: Kirigami.Units.smallSpacing
-                        visible: popup.actionLabels.length > 0
+                        // Job rows get their own Open/Pause/Cancel footer
+                        // (like the stock applet) instead of generic actions.
+                        visible: popup.actionLabels.length > 0 && !popup.isJob
 
                         Item {
                             Layout.fillWidth: true
@@ -316,6 +356,19 @@ PlasmaCore.Dialog {
                     Layout.preferredHeight: Kirigami.Units.iconSizes.large
                 }
             }
+
+            // Stock job footer: progress bar/speed graph, Details, Pause or
+            // Resume, Cancel and Open.  Only JobType rows have these roles.
+            NotificationJobItem {
+                Layout.fillWidth: true
+                Layout.topMargin: popup.isJob ? Kirigami.Units.smallSpacing : 0
+                visible: popup.isJob
+                model: popup.model
+                onSuspendRequested: popup.backend.notifToastSuspendJob(popup.index)
+                onResumeRequested: popup.backend.notifToastResumeJob(popup.index)
+                onKillRequested: popup.backend.notifToastKillJob(popup.index)
+                onOpenRequested: url => Qt.openUrlExternally(url)
+            }
         }
 
         // Non-visual objects live inside mainItem: PlasmaCore.Dialog's default
@@ -326,7 +379,14 @@ PlasmaCore.Dialog {
             repeat: false
             running: popup.visible && !popup.hovered && popup.effectiveTimeout > 0
             onTriggered: {
-                if (popup.backend) {
+                if (!popup.backend) {
+                    return
+                }
+                // Stock: auto-hiding a running job dismisses it into the
+                // history instead of expiring it (so the job keeps running).
+                if (popup.isRunningJob && !popup.permanentJobPopups) {
+                    popup.model.dismissed = true
+                } else {
                     popup.backend.notifToastExpire(popup.index)
                 }
             }
@@ -370,6 +430,42 @@ PlasmaCore.Dialog {
     property int ageTick: 1
     readonly property string ageText: {
         popup.ageTick // dependency
+
+        // Stock HeadingButtons: running jobs show the remaining time instead
+        // of "5 min ago".
+        if (popup.isJob) {
+            if (popup.jobState !== NotificationManager.Notifications.JobStateRunning) {
+                return ""
+            }
+            const details = popup.jobDetails
+            if (!details || !details.speed) {
+                return ""
+            }
+            const remaining = details.totalBytes - details.processedBytes
+            if (remaining <= 0) {
+                return ""
+            }
+            const eta = remaining / details.speed
+            if (eta < 0.5) {
+                return ""
+            }
+            if (eta < 60) {
+                return i18ncp("seconds remaining, keep short",
+                              "%1 s remaining", "%1 s remaining", Math.round(eta))
+            }
+            if (eta < 60 * 60) {
+                return i18ncp("minutes remaining, keep short",
+                              "%1 min remaining", "%1 min remaining",
+                              Math.round(eta / 60))
+            }
+            if (eta < 60 * 60 * 5) {
+                return i18ncp("hours remaining, keep short",
+                              "%1 h remaining", "%1 h remaining",
+                              Math.round(eta / 60 / 60))
+            }
+            return ""
+        }
+
         const time = popup.model.updated ?? popup.model.created
         if (!time || isNaN(time.getTime())) {
             return ""

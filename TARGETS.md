@@ -56,6 +56,14 @@ What the user asked for; strikethrough = done and verified (or user explicitly p
   clicking outside it~~ — v0.12.9 (native `PlasmaExtras.Menu`, same mechanism as
   the tray menus).
 
+## M12.5 job progress + toast tooltips (user request, Nov 24)
+
+- ~~Copy the stock notifications applet's file-transfer/job footer into toasts and
+  history — progress bar, expandable speed graph, pause/resume, cancel, open~~ —
+  v0.13.0, verified in the real shell.
+- ~~Fix notification toast tooltips being clipped at the top edge~~ — v0.13.0:
+  real `ToolTip` children open below the header buttons.
+
 ## Explicit user workflow rules
 
 - Commit + tag a point release for every verified iteration; never skip versions.

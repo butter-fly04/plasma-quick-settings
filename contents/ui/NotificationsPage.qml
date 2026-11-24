@@ -180,6 +180,33 @@ ColumnLayout {
                             wrapMode: Text.Wrap
                             Layout.fillWidth: true
                         }
+                        // Stock job footer, same component as the toast.
+                        NotificationJobItem {
+                            Layout.fillWidth: true
+                            Layout.topMargin: Kirigami.Units.smallSpacing
+                            visible: (notifRow.model.type ?? 0)
+                                === NotificationManager.Notifications.JobType
+                            model: notifRow.model
+                            onSuspendRequested: {
+                                const idx = page.backend.notifHistoryModel.index(notifRow.index, 0)
+                                if (idx.valid) {
+                                    page.backend.notifHistoryModel.suspendJob(idx)
+                                }
+                            }
+                            onResumeRequested: {
+                                const idx = page.backend.notifHistoryModel.index(notifRow.index, 0)
+                                if (idx.valid) {
+                                    page.backend.notifHistoryModel.resumeJob(idx)
+                                }
+                            }
+                            onKillRequested: {
+                                const idx = page.backend.notifHistoryModel.index(notifRow.index, 0)
+                                if (idx.valid) {
+                                    page.backend.notifHistoryModel.killJob(idx)
+                                }
+                            }
+                            onOpenRequested: url => Qt.openUrlExternally(url)
+                        }
                         // Action buttons row — same pattern as the stock
                         // applet's NotificationItem actions Repeater.
                         RowLayout {

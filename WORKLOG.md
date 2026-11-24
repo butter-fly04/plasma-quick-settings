@@ -3,9 +3,17 @@
 Live summary of the project state; kept up to date by the assistant. Targets live in `TARGETS.md`.
 Versions are git tags (`git tag -l 'v*'`), one point release per verified iteration.
 
-## Current state (after v0.12.9)
+## Current state (after v0.13.0)
 
-- **v0.12.9** (this release): the stock keyboard-layout applet is available as a panel
+- **v0.13.0** (this release): notification toasts and history rows now render the stock
+  notifications applet's job footer for file transfers — progress bar/percentage,
+  expandable Details with the speed graph, Pause/Resume, Cancel and
+  Open/Open Containing Folder — copied from plasma-workspace and adapted to the public
+  `org.kde.notificationmanager` model. Running-job popups follow the stock
+  permanent-job-popup setting (auto-dismiss into history or persist). Header tooltips in
+  toasts now open below their buttons, so they are no longer clipped by the toast's top
+  edge.
+- **v0.12.9**: the stock keyboard-layout applet is available as a panel
   icon and as a pill in the popup, both individually configurable and using the stock
   `KeyboardLayout` module, display styles, flags and wheel switching.  Clicking either
   place opens the layout list as a reliable native menu (right-click too on the panel
@@ -25,6 +33,25 @@ Versions are git tags (`git tag -l 'v*'`), one point release per verified iterat
   v0.12.7's event-driven model).
 - **v0.12.4**: panel tray icons moved left of the applet icons, per-icon show/hide config.
 - **v0.12.3**: history action close semantics.
+
+### Verified working (v0.13.0)
+
+- **Stock job footer in toasts.** `NotificationJobItem.qml`,
+  `NotificationJobSpeedChart.qml` and `NotificationJobDetails.qml` are adapted copies of
+  the plasma-workspace notifications applet's job components. A small local interface
+  object supplies the roles the stock `ModelInterface` would provide
+  (`jobState`, `percentage`, `suspendable`, `killable`, `jobDetails`).
+- **Live transfer UI.** A running file copy/download shows the progress bar and
+  percentage, a Pause/Resume button, Cancel, Details (expands the speed graph) and
+  Open/Open Containing Folder. The header shows the remaining time while the job runs.
+- **History.** Job rows use the same footer in the Notifications page, wired to the
+  history model's `suspendJob`/`resumeJob`/`killJob` methods.
+- **Popup lifetime.** `showJobs` follows `Settings.jobsInNotifications`; running job
+  popups honour `permanentJobPopups` (stay until finished, or auto-dismiss into history
+  after the popup timeout).
+- **Unclipped tooltips.** The toast header's Configure/Minimize/Close tooltips are real
+  `ToolTip` children of their buttons and open below the header instead of being cut off
+  at the toast window's top edge.
 
 ### Verified working (v0.12.9)
 

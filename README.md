@@ -19,7 +19,9 @@ per-app tray icons and a stock-style keyboard-layout switcher.
   panel icon and/or as a pill inside the popup. Left click activates, right click (or
   left click on menu-only items) opens the app's native menu.
 - **Notifications**: an unread counter and history page, plus stock-style screen toasts
-  (one borderless window per notification, timeout bar, hover pause, actions).
+  (one borderless window per notification, timeout bar, hover pause, actions) and the
+  stock file-transfer/job footer with progress, an expandable speed graph, pause/resume,
+  cancel and open.
 - **Keyboard layout**: the stock keyboard-layout face as a panel icon and/or a popup
   pill. Display styles 0/1/2 (name, flag, flag with name badge), wheel switching, and a
   native layout menu with flags, long names and a checkmark on the current layout.
@@ -57,9 +59,9 @@ containing `metadata.json` and `contents/`. Choose one of these two methods.
 
 ### Method 1 — use the ready-made `.plasmoid` (easiest)
 
-1. Download `quicksettings-v0.12.9.plasmoid` from the
-   **[v0.12.9 release](https://github.com/butter-fly04/plasma-quick-settings/releases/tag/v0.12.9)**
-   or from **[dist/quicksettings-v0.12.9.plasmoid](dist/quicksettings-v0.12.9.plasmoid)**.
+1. Download `quicksettings-v0.13.0.plasmoid` from the
+   **[v0.13.0 release](https://github.com/butter-fly04/plasma-quick-settings/releases/tag/v0.13.0)**
+   or from **[dist/quicksettings-v0.13.0.plasmoid](dist/quicksettings-v0.13.0.plasmoid)**.
 2. Right-click the desktop or panel → **Enter Edit Mode** → **Add Widgets** →
    **Get New Widgets** → **Install Widget From Local File…**, and select the
    `.plasmoid` file.
@@ -144,7 +146,7 @@ The applet is plain QML on top of Plasma 6 modules; there is no build step.
   Real panel behaviour (tooltips, popup stacking, notification ownership) must be tested
   in a running plasmashell.
 - The downloadable `.plasmoid` is just a zip of `metadata.json` and `contents/`; rebuild
-  it with `zip -qr dist/quicksettings-v0.12.9.plasmoid metadata.json contents` after
+  it with `zip -qr dist/quicksettings-v0.13.0.plasmoid metadata.json contents` after
   changes if you want to publish an updated package.
 - Releases are tagged `vX.Y.Z`; see `WORKLOG.md` for the change history and
   `TARGETS.md` for the feature status.
@@ -154,7 +156,8 @@ changes.
 
 ## License
 
-This project is licensed under the **GNU General Public License, version 2 ** — `GPL-2.0-or-later`. See [LICENSE](LICENSE).
+This project is licensed under the **GNU General Public License, version 2 or (at your
+option) any later version** — `GPL-2.0-or-later`. See [LICENSE](LICENSE).
 
 It reuses and adapts components and reference implementations from KDE Plasma
 (`plasma-workspace`, `plasma-desktop`) and from

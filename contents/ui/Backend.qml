@@ -202,6 +202,7 @@ Item {
     readonly property int notifToastCount: notifToastLoader.item ? notifToastLoader.item.count : 0
     readonly property int notifPopupTimeout: notifToastLoader.item ? notifToastLoader.item.notifPopupTimeout : 5000
     readonly property bool notifShowPopupTimeout: notifToastLoader.item ? notifToastLoader.item.notifShowPopupTimeout : true
+    readonly property bool notifPermanentJobPopups: notifToastLoader.item ? notifToastLoader.item.notifPermanentJobPopups : false
 
     function notifToastClose(index) { if (notifToastLoader.item) notifToastLoader.item.close(index) }
     function notifToastExpire(index) { if (notifToastLoader.item) notifToastLoader.item.expire(index) }
@@ -211,6 +212,9 @@ Item {
     function notifToastInvokeAction(index, actionName) { if (notifToastLoader.item) notifToastLoader.item.invokeAction(index, actionName) }
     function notifToastStopTimeout(index) { if (notifToastLoader.item) notifToastLoader.item.stopTimeout(index) }
     function notifToastStartTimeout(notificationId) { if (notifToastLoader.item) notifToastLoader.item.startTimeout(notificationId) }
+    function notifToastSuspendJob(index) { if (notifToastLoader.item) notifToastLoader.item.suspendJob(index) }
+    function notifToastResumeJob(index) { if (notifToastLoader.item) notifToastLoader.item.resumeJob(index) }
+    function notifToastKillJob(index) { if (notifToastLoader.item) notifToastLoader.item.killJob(index) }
 
 
     // ----------------------------------------------------- Night Color (M4)
