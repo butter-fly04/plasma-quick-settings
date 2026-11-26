@@ -160,11 +160,7 @@ This project is licensed under the **GNU General Public License, version 2 or la
 (SPDX: `GPL-2.0-or-later`). See [LICENSE](LICENSE).
 
 It reuses and adapts components and reference implementations from KDE Plasma
-(`plasma-workspace`, `plasma-desktop`) and from
-[butter-fly04/plasma-unified-quicksettings](https://github.com/butter-fly04/plasma-unified-quicksettings),
-all of which are distributed under GPL-2.0-or-later. SPDX headers in the source files
-record the same license.
-
+(`plasma-workspace`, `plasma-desktop`) 
 ## Credits
 
 - The KDE Plasma developers, for Plasma, its QML components and the stock applets this
