@@ -169,6 +169,3 @@ record the same license.
 
 - The KDE Plasma developers, for Plasma, its QML components and the stock applets this
   widget follows (system tray, keyboard layout, battery, notifications).
-- [butter-fly04/plasma-unified-quicksettings](https://github.com/butter-fly04/plasma-unified-quicksettings)
-  for the original unified quick-settings plasmoid this project grew out of.
-- Everyone who tested iterations in a real Plasma session.
